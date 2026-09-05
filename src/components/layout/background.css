@@ -1,0 +1,236 @@
+/* ==========================================================
+   MGB Connect Background
+   ========================================================== */
+
+.mgb-background {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #050505;
+  z-index: -50;
+}
+
+.mgb-background__flow {
+  position: absolute;
+  inset: 0;
+
+  animation: mgbFlow 42s ease-in-out infinite;
+
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/* ==========================================================
+   FLOW
+   ========================================================== */
+
+.mgb-flow {
+  position: absolute;
+
+  left: -22%;
+  width: 150%;
+
+  border-radius: 9999px;
+
+  pointer-events: none;
+
+  will-change: transform;
+}
+
+.mgb-flow-1 {
+
+  bottom: -20%;
+
+  height: 58%;
+
+  background:
+    linear-gradient(
+      92deg,
+      #5b3300 0%,
+      #8a4d00 18%,
+      #b96d00 40%,
+      #d88c00 60%,
+      #f1b232 78%,
+      #b96d00 100%
+    );
+
+  filter: blur(82px);
+
+  opacity: .82;
+}
+
+.mgb-flow-2 {
+
+  bottom: -2%;
+
+  height: 30%;
+
+  background:
+    linear-gradient(
+      90deg,
+      #5d3500,
+      #b66b00,
+      #d88f12,
+      #b96b00
+    );
+
+  filter: blur(68px);
+
+  opacity: .48;
+}
+
+.mgb-flow-3 {
+
+  bottom: -28%;
+
+  height: 42%;
+
+  background:
+    linear-gradient(
+      90deg,
+      #351d00,
+      #5c3300,
+      #8b5200,
+      #5c3300
+    );
+
+  filter: blur(92px);
+
+  opacity: .32;
+}
+
+/* ==========================================================
+   GLOW
+   ========================================================== */
+
+.mgb-glow {
+
+  position: absolute;
+
+  border-radius: 50%;
+
+  pointer-events: none;
+
+  will-change: transform;
+}
+
+.mgb-glow-left {
+
+  left: -10%;
+  bottom: -14%;
+
+  width: 75vw;
+  height: 75vw;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,181,65,.24),
+      rgba(255,181,65,.08) 45%,
+      transparent 100%
+    );
+
+  filter: blur(95px);
+}
+
+.mgb-glow-right {
+
+  right: -5%;
+  bottom: 8%;
+
+  width: 38vw;
+  height: 38vw;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,205,120,.14),
+      transparent 72%
+    );
+
+  filter: blur(85px);
+}
+
+/* ==========================================================
+   NOISE
+   ========================================================== */
+
+.mgb-noise {
+
+  position: absolute;
+  inset: 0;
+
+  opacity: .02;
+
+  pointer-events: none;
+
+  background-image:
+      radial-gradient(rgba(255,255,255,.08) .7px, transparent .8px);
+
+  background-size: 26px 26px;
+
+  mix-blend-mode: soft-light;
+}
+
+/* ==========================================================
+   VIGNETTE
+   ========================================================== */
+
+.mgb-vignette {
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+      radial-gradient(
+        ellipse at center,
+        rgba(0,0,0,0) 45%,
+        rgba(0,0,0,.14) 72%,
+        rgba(0,0,0,.56) 100%
+      );
+}
+
+/* ==========================================================
+   ANIMATION
+   ========================================================== */
+
+@keyframes mgbFlow {
+
+  0% {
+    transform:
+      translate3d(-1.2%, 1%, 0)
+      rotate(-0.8deg)
+      scale(1);
+  }
+
+  25% {
+    transform:
+      translate3d(.8%, -.6%, 0)
+      rotate(.3deg)
+      scale(1.015);
+  }
+
+  50% {
+    transform:
+      translate3d(1.2%, .8%, 0)
+      rotate(.7deg)
+      scale(1.02);
+  }
+
+  75% {
+    transform:
+      translate3d(-.8%, 1.2%, 0)
+      rotate(-.2deg)
+      scale(1.01);
+  }
+
+  100% {
+    transform:
+      translate3d(-1.2%, 1%, 0)
+      rotate(-0.8deg)
+      scale(1);
+  }
+
+}
