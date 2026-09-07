@@ -141,7 +141,7 @@ export const navigationItems: NavigationItem[] = [
   },
 
   {
-    href: "/leader/members",
+    href: "/leader/team",
     icon: Users,
     title: "Messdiener",
     description:
