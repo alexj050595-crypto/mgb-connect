@@ -67,7 +67,7 @@ export const navigationItems: NavigationItem[] = [
       "leiter",
       "planschreiber",
       "admin",
-       ],
+    ],
   },
 
   {
@@ -132,18 +132,17 @@ export const navigationItems: NavigationItem[] = [
 
   /* ============================================================
      LEITERBEREICH
-     
+
      Hier stehen NUR zusätzliche Funktionen.
-     Persönliche Dienste/Tauschbörse/Punkte werden NICHT
-     noch einmal aufgeführt.
+     Persönliche Dienste, Tauschbörse und Punkte werden
+     nicht noch einmal aufgeführt.
      ============================================================ */
 
   {
     href: "/leader",
     icon: ShieldCheck,
     title: "Leiterbereich",
-    description:
-      "Übersicht und Leitungsfunktionen",
+    description: "Übersicht und Leitungsfunktionen",
     roles: [
       "leiter",
       "planschreiber",
@@ -153,25 +152,10 @@ export const navigationItems: NavigationItem[] = [
   },
 
   {
-    href: "/leader/members",
-    icon: Users,
-    title: "Messdiener",
-    description:
-      "Übersicht der Messdiener",
-    roles: [
-      "leiter",
-      "planschreiber",
-      "admin",
-    ],
-    permission: "view_team",
-  },
-
-  {
     href: "/leader/services",
     icon: ClipboardList,
-    title: "Dienstübersicht",
-    description:
-      "Dienste der Gemeinschaft einsehen",
+    title: "Dienstverwaltung",
+    description: "Dienste prüfen und verwalten",
     roles: [
       "leiter",
       "planschreiber",
@@ -181,11 +165,23 @@ export const navigationItems: NavigationItem[] = [
   },
 
   {
+    href: "/leader/team",
+    icon: Users,
+    title: "Messdiener",
+    description: "Messdiener und deren Dienste einsehen",
+    roles: [
+      "leiter",
+      "planschreiber",
+      "admin",
+    ],
+    permission: "view_team",
+  },
+
+  {
     href: "/leader/statistics",
     icon: BarChart3,
     title: "Statistiken",
-    description:
-      "Dienste und Punkte auswerten",
+    description: "Punkte und Dienste auswerten",
     roles: [
       "leiter",
       "planschreiber",
@@ -196,16 +192,19 @@ export const navigationItems: NavigationItem[] = [
 
   /* ============================================================
      PLANVERWALTUNG
-     
-     NUR PLANSCHREIBER + ADMIN
+
+     Nur Planschreiber + Admin.
+
+     Übernahmen werden inzwischen automatisch angenommen.
+     Diese Seite dient deshalb vor allem dazu, bereits
+     übernommene Dienste zu prüfen und bei Bedarf abzulehnen.
      ============================================================ */
 
   {
     href: "/leader/requests",
     icon: CheckCircle2,
     title: "Anfragen",
-    description:
-      "Tausch- und Übernahmeanfragen bestätigen",
+    description: "Übernahmen prüfen und bei Bedarf ablehnen",
     roles: [
       "planschreiber",
       "admin",
@@ -217,8 +216,7 @@ export const navigationItems: NavigationItem[] = [
     href: "/leader/schedule",
     icon: CalendarDays,
     title: "Messdienerplan",
-    description:
-      "Dienstplan erstellen und bearbeiten",
+    description: "Messdienerplan erstellen und bearbeiten",
     roles: [
       "planschreiber",
       "admin",
@@ -228,30 +226,24 @@ export const navigationItems: NavigationItem[] = [
 
   /* ============================================================
      ADMINISTRATION
-     
-     AUSSCHLIESSLICH ADMIN
+
+     Ausschließlich Admin.
      ============================================================ */
 
   {
     href: "/admin",
     icon: ShieldCheck,
     title: "Administration",
-    description:
-      "Zentrale Systemverwaltung",
-    roles: [
-      "admin",
-    ],
+    description: "Zentrale Systemverwaltung",
+    roles: ["admin"],
   },
 
   {
     href: "/admin/users",
     icon: UserCog,
     title: "Benutzerverwaltung",
-    description:
-      "Benutzer und Konten verwalten",
-    roles: [
-      "admin",
-    ],
+    description: "Benutzer und Konten verwalten",
+    roles: ["admin"],
     permission: "manage_members",
   },
 
@@ -259,11 +251,8 @@ export const navigationItems: NavigationItem[] = [
     href: "/admin/roles",
     icon: ShieldCheck,
     title: "Rollen & Rechte",
-    description:
-      "Rollen und Berechtigungen verwalten",
-    roles: [
-      "admin",
-    ],
+    description: "Rollen und Berechtigungen verwalten",
+    roles: ["admin"],
     permission: "manage_roles",
   },
 
@@ -271,11 +260,8 @@ export const navigationItems: NavigationItem[] = [
     href: "/admin/announcements",
     icon: Megaphone,
     title: "Ankündigungen",
-    description:
-      "Nachrichten an die MGB verwalten",
-    roles: [
-      "admin",
-    ],
+    description: "Nachrichten an die MGB verwalten",
+    roles: ["admin"],
     permission: "manage_announcements",
   },
 
@@ -283,11 +269,8 @@ export const navigationItems: NavigationItem[] = [
     href: "/admin/settings",
     icon: Settings,
     title: "Systemverwaltung",
-    description:
-      "Globale Systemeinstellungen",
-    roles: [
-      "admin",
-    ],
+    description: "Globale Systemeinstellungen",
+    roles: ["admin"],
     permission: "manage_system",
   },
 ];
@@ -300,10 +283,6 @@ export function getNavigationForRole(
   role: UserRole
 ): NavigationItem[] {
   return navigationItems.filter((item) => {
-    /*
-     * Wenn Rollen angegeben sind, muss die aktuelle Rolle
-     * darin enthalten sein.
-     */
     if (
       item.roles &&
       !item.roles.includes(role)
@@ -311,16 +290,9 @@ export function getNavigationForRole(
       return false;
     }
 
-    /*
-     * Wenn eine Permission angegeben ist, muss die Rolle
-     * diese ebenfalls besitzen.
-     */
     if (
       item.permission &&
-      !hasPermission(
-        role,
-        item.permission
-      )
+      !hasPermission(role, item.permission)
     ) {
       return false;
     }
