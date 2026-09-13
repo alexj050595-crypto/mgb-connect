@@ -14,11 +14,39 @@ export default function ServicesPage() {
 
   const { services } = useServices();
 
-  const upcomingServices = useMemo(() => {
-    return services.filter(
-      (service) => service.status !== "completed"
+  const sortedServices = useMemo(() => {
+    return [...services].sort(
+      (a, b) =>
+        new Date(a.dateISO).getTime() -
+        new Date(b.dateISO).getTime()
     );
   }, [services]);
+
+  const upcomingServices = useMemo(() => {
+    const now = Date.now();
+
+    return sortedServices.filter(
+      (service) =>
+        service.status !== "completed" &&
+        new Date(service.dateISO).getTime() >= now
+    );
+  }, [sortedServices]);
+
+  const pastServices = useMemo(() => {
+    const now = Date.now();
+
+    return sortedServices
+      .filter(
+        (service) =>
+          service.status === "completed" ||
+          new Date(service.dateISO).getTime() < now
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.dateISO).getTime() -
+          new Date(a.dateISO).getTime()
+      );
+  }, [sortedServices]);
 
   const nextService = upcomingServices[0];
 
@@ -136,41 +164,81 @@ export default function ServicesPage() {
           </div>
         )}
 
-        {/* Dienstliste */}
-        <div className="space-y-5">
-          {services.map((service) => (
-            <ServiceListItem
-              key={service.id}
-              id={service.id}
-              date={service.date}
-              time={service.time}
-              title={service.title}
-              status={service.status}
-            />
-          ))}
-
-          {services.length === 0 && (
-            <div
-              className="
-                rounded-[28px]
-                border
-                border-white/10
-                bg-white/[0.045]
-                p-10
-                text-center
-                backdrop-blur-2xl
-              "
-            >
-              <h3 className="text-2xl font-bold text-white">
-                Keine Dienste vorhanden
-              </h3>
-
-              <p className="mt-2 text-white/60">
-                Aktuell wurden dir keine Dienste zugewiesen.
+        {/* Kommende Dienste */}
+        {upcomingServices.length > 0 && (
+          <section className="mb-10">
+            <div className="mb-5">
+              <h2 className="text-2xl font-bold text-white">
+                Kommende Dienste
+              </h2>
+              <p className="mt-1 text-white/50">
+                Chronologisch nach dem nächsten Einsatz sortiert.
               </p>
             </div>
-          )}
-        </div>
+
+            <div className="space-y-5">
+              {upcomingServices.map((service) => (
+                <ServiceListItem
+                  key={service.id}
+                  id={service.id}
+                  date={service.date}
+                  time={service.time}
+                  title={service.title}
+                  status={service.status}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Vergangene Dienste */}
+        {pastServices.length > 0 && (
+          <section>
+            <div className="mb-5">
+              <h2 className="text-2xl font-bold text-white">
+                Vergangene Dienste
+              </h2>
+              <p className="mt-1 text-white/50">
+                Die zuletzt vergangenen Dienste stehen oben.
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              {pastServices.map((service) => (
+                <ServiceListItem
+                  key={service.id}
+                  id={service.id}
+                  date={service.date}
+                  time={service.time}
+                  title={service.title}
+                  status={service.status}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {services.length === 0 && (
+          <div
+            className="
+              rounded-[28px]
+              border
+              border-white/10
+              bg-white/[0.045]
+              p-10
+              text-center
+              backdrop-blur-2xl
+            "
+          >
+            <h3 className="text-2xl font-bold text-white">
+              Keine Dienste vorhanden
+            </h3>
+
+            <p className="mt-2 text-white/60">
+              Aktuell wurden dir keine Dienste zugewiesen.
+            </p>
+          </div>
+        )}
       </section>
     </main>
   );
