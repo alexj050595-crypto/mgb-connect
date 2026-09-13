@@ -161,31 +161,14 @@ export default function ServiceDetailPage({
     );
   }
 
-  /*
-   * ============================================================
-   * STATUS
-   * ============================================================
-   */
-
   const status = service.status;
 
   const isScheduled = status === "scheduled";
-
   const isExchangeRequested =
     status === "exchange_requested";
-
-  const isTakenOver =
-    status === "taken_over";
-
+  const isTakenOver = status === "taken_over";
   const isExcused = status === "excused";
-
   const isCompleted = status === "completed";
-
-  /*
-   * ============================================================
-   * AKTIONEN
-   * ============================================================
-   */
 
   const handleExcuseConfirm = (
     reason: ExcuseReason
@@ -410,7 +393,7 @@ export default function ServiceDetailPage({
                   </div>
 
                   <h3 className="mt-1 text-xl font-bold text-white">
-                    Tausch anfragen
+                    Dienst freigeben
                   </h3>
 
                   <p className="mt-2 text-sm leading-6 text-white/60">
@@ -468,7 +451,7 @@ function getStatusDescription(
       return "Für diesen Dienst wird aktuell eine Vertretung gesucht.";
 
     case "taken_over":
-      return "Die Übernahme dieses Dienstes wurde durch die Leitung bestätigt.";
+      return "Dieser Dienst wurde übernommen und ist für die angegebene Person eingetragen. Die Leitung kann die Übernahme bei Bedarf noch ablehnen.";
 
     case "excused":
       return "Du bist für diesen Dienst aktuell abgemeldet.";
@@ -512,7 +495,7 @@ function StatusBadge({
       wrapper:
         "border-violet-400/20 bg-violet-400/10",
       text: "text-violet-300",
-      label: "Übernahme bestätigt",
+      label: "Übernommen",
     },
 
     excused: {
@@ -639,9 +622,9 @@ function StatusPanel({
     },
 
     taken_over: {
-      title: "Übernahme bestätigt",
+      title: "Übernommen",
       text:
-        "Die Leitung hat die Übernahme dieses Dienstes bestätigt. Der Dienst wird jetzt von der angegebenen Person übernommen.",
+        "Dieser Dienst wurde direkt übernommen und ist damit für die angegebene Person eingetragen. Die Leitung kann die Übernahme bei Bedarf noch ablehnen.",
       container:
         "border-violet-400/20 bg-violet-400/10",
       accent: "text-violet-300",
@@ -860,7 +843,7 @@ function TakenOverPanel({
 
         <div>
           <p className="text-sm uppercase tracking-[0.18em] text-violet-300">
-            Übernahme bestätigt
+            Übernahme aktiv
           </p>
 
           <h3 className="mt-1 text-xl font-bold text-white">
@@ -868,9 +851,9 @@ function TakenOverPanel({
           </h3>
 
           <p className="mt-2 text-sm leading-6 text-white/60">
-            Die Leitung hat die Übernahme dieses Dienstes
-            bestätigt. Damit ist die Vertretung offiziell
-            eingetragen.
+            Die Übernahme ist direkt wirksam. Die Leitung kann
+            sie bei Bedarf noch ablehnen. Bis dahin ist der Dienst
+            für die angegebene Person eingetragen.
           </p>
 
           {takenBy && (
@@ -1003,16 +986,16 @@ function CompletedPanel() {
 
         <div>
           <p className="text-sm uppercase tracking-[0.18em] text-white/50">
-            Dienst abgeschlossen
+            Abgeschlossen
           </p>
 
           <h3 className="mt-1 text-xl font-bold text-white">
-            Dieser Dienst ist vorbei
+            Dienst bereits erledigt
           </h3>
 
           <p className="mt-2 text-sm leading-6 text-white/60">
-            Der Dienst wurde abgeschlossen und befindet sich
-            in deinem vergangenen Dienstverlauf.
+            Dieser Dienst ist abgeschlossen und zählt zu deinen
+            bereits gesammelten Punkten.
           </p>
         </div>
       </div>
