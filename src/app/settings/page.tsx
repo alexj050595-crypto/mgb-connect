@@ -4,608 +4,154 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Bell,
+  CalendarDays,
   Check,
   ChevronRight,
   CircleUserRound,
-  Database,
+  Eye,
+  Globe2,
+  Lock,
   Palette,
-  Settings2,
   Shield,
-  UserCog,
+  Settings2,
 } from "lucide-react";
 
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
-
 import { useRole } from "@/context/RoleContext";
 import type { UserRole } from "@/lib/permissions";
 
-type RoleOption = {
-  role: UserRole;
-  title: string;
-  description: string;
-};
+type RoleOption = { role: UserRole; title: string; description: string };
 
 const roleOptions: RoleOption[] = [
-  {
-    role: "messdiener",
-    title: "Messdiener",
-    description:
-      "Eigene Dienste anzeigen, Punkte verfolgen und Dienste übernehmen.",
-  },
-  {
-    role: "leiter",
-    title: "Leiter",
-    description:
-      "Messdiener, Dienste und organisatorische Bereiche verwalten.",
-  },
-  {
-    role: "planschreiber",
-    title: "Planschreiber",
-    description:
-      "Dienstplanung und organisatorische Planungsbereiche verwalten.",
-  },
-  {
-    role: "admin",
-    title: "Administrator",
-    description:
-      "Vollständiger Zugriff auf die Verwaltungs- und Systembereiche.",
-  },
+  { role: "messdiener", title: "Messdiener", description: "Eigene Dienste, Punkte und Tauschbörse testen." },
+  { role: "leiter", title: "Leiter", description: "Leiterbereich und organisatorische Bereiche testen." },
+  { role: "planschreiber", title: "Planschreiber", description: "Planung und Anfragen testen." },
+  { role: "admin", title: "Administrator", description: "Alle Verwaltungs- und Systembereiche testen." },
 ];
+
+type ToggleRowProps = { title: string; description: string; value: boolean; onChange: () => void };
+
+function ToggleRow({ title, description, value, onChange }: ToggleRowProps) {
+  return (
+    <button type="button" onClick={onChange} className="flex w-full items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.05]">
+      <div>
+        <p className="font-semibold text-white">{title}</p>
+        <p className="mt-1 text-sm leading-6 text-white/45">{description}</p>
+      </div>
+      <span className={`relative h-7 w-12 shrink-0 rounded-full border transition ${value ? "border-amber-400/30 bg-amber-400/20" : "border-white/10 bg-white/5"}`}>
+        <span className={`absolute top-1 h-5 w-5 rounded-full transition ${value ? "left-6 bg-amber-300" : "left-1 bg-white/30"}`} />
+      </span>
+    </button>
+  );
+}
 
 export default function SettingsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const {
-    role,
-    roleLabel,
-    setRole,
-  } = useRole();
-
-  const handleRoleChange = (
-    newRole: UserRole
-  ) => {
-    setRole(newRole);
-  };
+  const [notifications, setNotifications] = useState({ services: true, exchange: true, news: true, important: true });
+  const [appearance, setAppearance] = useState({ animations: true, background: true, compact: false });
+  const [privacy, setPrivacy] = useState({ profile: true, points: true, ranking: true });
+  const { role, roleLabel, setRole } = useRole();
 
   return (
     <main className="relative min-h-screen overflow-hidden">
       <Background />
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-30 h-32 bg-gradient-to-b from-[#050505] via-[#050505]/92 to-transparent" />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Topbar sidebarOpen={sidebarOpen} onMenuClick={() => setSidebarOpen(true)} />
 
-      {/* ======================================================
-          TOP OVERLAY
-      ====================================================== */}
-
-      <div
-        className="
-          pointer-events-none
-          fixed
-          inset-x-0
-          top-0
-          z-30
-          h-32
-          bg-gradient-to-b
-          from-[#050505]
-          via-[#050505]/92
-          to-transparent
-        "
-      />
-
-      {/* ======================================================
-          SIDEBAR
-      ====================================================== */}
-
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      {/* ======================================================
-          TOPBAR
-      ====================================================== */}
-
-      <Topbar
-        sidebarOpen={sidebarOpen}
-        onMenuClick={() => setSidebarOpen(true)}
-      />
-
-      {/* ======================================================
-          CONTENT
-      ====================================================== */}
-
-      <section
-        className="
-          relative
-          z-10
-          mx-auto
-          max-w-5xl
-          px-6
-          pb-12
-          pt-36
-        "
-      >
-        {/* ====================================================
-            BACK
-        ==================================================== */}
-
-        <Link
-          href="/"
-          className="
-            mb-8
-            inline-flex
-            items-center
-            gap-2
-            text-white/55
-            transition
-            hover:text-white
-          "
-        >
-          <ArrowLeft size={18} />
-
-          Zurück zum Dashboard
-        </Link>
-
-        {/* ====================================================
-            HEADER
-        ==================================================== */}
+      <section className="relative z-10 mx-auto max-w-5xl px-6 pb-16 pt-36">
+        <Link href="/" className="mb-8 inline-flex items-center gap-2 text-white/55 transition hover:text-white"><ArrowLeft size={18} />Zurück zum Dashboard</Link>
 
         <div className="mb-10">
-          <p
-            className="
-              text-sm
-              uppercase
-              tracking-[0.22em]
-              text-amber-300/80
-            "
-          >
-            Einstellungen
-          </p>
-
-          <h1
-            className="
-              mt-2
-              text-5xl
-              font-black
-              tracking-tight
-              text-white
-            "
-          >
-            Einstellungen
-          </h1>
-
-          <p
-            className="
-              mt-3
-              max-w-2xl
-              text-lg
-              leading-8
-              text-white/60
-            "
-          >
-            Verwalte deine aktuelle Entwicklungsumgebung
-            und bereite MGB Connect auf die spätere
-            Benutzerverwaltung vor.
-          </p>
+          <p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Persönlich</p>
+          <h1 className="mt-2 text-5xl font-black tracking-tight text-white">Einstellungen</h1>
+          <p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">Passe dein MGB-Connect-Erlebnis an. Spätere Kontofunktionen werden direkt mit deinem Benutzerkonto verbunden.</p>
         </div>
 
-        {/* ====================================================
-            CURRENT ACCOUNT
-        ==================================================== */}
-
-        <SettingsSection
-          icon={<CircleUserRound size={21} />}
-          eyebrow="Account"
-          title="Aktueller Zugriff"
-          description="
-            Diese Informationen werden später automatisch
-            mit deinem angemeldeten Benutzerkonto verbunden.
-          "
-        >
-          <div
-            className="
-              flex
-              flex-col
-              gap-4
-              rounded-2xl
-              border
-              border-white/10
-              bg-white/[0.03]
-              p-5
-              sm:flex-row
-              sm:items-center
-              sm:justify-between
-            "
-          >
-            <div>
-              <p className="text-sm text-white/45">
-                Aktuelle Rolle
-              </p>
-
-              <p className="mt-1 text-xl font-bold text-white">
-                {roleLabel}
-              </p>
-            </div>
-
-            <div
-              className="
-                inline-flex
-                items-center
-                gap-2
-                self-start
-                rounded-xl
-                border
-                border-emerald-400/20
-                bg-emerald-400/10
-                px-3
-                py-2
-                text-sm
-                font-semibold
-                text-emerald-300
-                sm:self-auto
-              "
-            >
-              <Check size={16} />
-
-              Aktiv
-            </div>
+        <SettingsSection icon={<CircleUserRound size={21} />} eyebrow="Konto" title="Profil & Konto" description="Deine persönlichen Kontoinformationen.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <InfoRow title="Name" value="Tim Mustermann" />
+            <InfoRow title="E-Mail" value="Noch nicht verbunden" />
+            <InfoRow title="Rolle" value={roleLabel} />
+            <InfoRow title="Kontostatus" value="Aktiv" />
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <ActionRow icon={<Lock size={18} />} title="Passwort ändern" description="Wird mit der Anmeldung verbunden." />
+            <ActionRow icon={<CircleUserRound size={18} />} title="Profil bearbeiten" description="Name und Profilbild verwalten." />
           </div>
         </SettingsSection>
 
-        {/* ====================================================
-            DEVELOPMENT ROLE
-        ==================================================== */}
+        <SettingsSection icon={<Bell size={21} />} eyebrow="Benachrichtigungen" title="Benachrichtigungen" description="Wähle aus, worüber du informiert werden möchtest.">
+          <div className="space-y-3">
+            <ToggleRow title="Dienst-Erinnerungen" description="Erinnerungen an bevorstehende Dienste." value={notifications.services} onChange={() => setNotifications(v => ({ ...v, services: !v.services }))} />
+            <ToggleRow title="Tauschbörse" description="Neue Angebote und Änderungen an deinen Angeboten." value={notifications.exchange} onChange={() => setNotifications(v => ({ ...v, exchange: !v.exchange }))} />
+            <ToggleRow title="News & Ankündigungen" description="Neue Informationen aus der Gemeinschaft." value={notifications.news} onChange={() => setNotifications(v => ({ ...v, news: !v.news }))} />
+            <ToggleRow title="Wichtige Mitteilungen" description="Wichtige organisatorische Hinweise immer anzeigen." value={notifications.important} onChange={() => setNotifications(v => ({ ...v, important: !v.important }))} />
+          </div>
+        </SettingsSection>
 
-        <SettingsSection
-          icon={<UserCog size={21} />}
-          eyebrow="Entwicklung"
-          title="Rolle wechseln"
-          description="
-            In der aktuellen Entwicklungsphase kannst du
-            zwischen den verschiedenen Rollen wechseln,
-            um alle Bereiche von MGB Connect zu testen.
-          "
-        >
+        <SettingsSection icon={<Palette size={21} />} eyebrow="Darstellung" title="Erscheinungsbild" description="Das aktuelle MGB-Connect-Design bleibt bewusst dunkel und ruhig.">
+          <div className="space-y-3">
+            <InfoRow title="Theme" value="Dark · MGB Connect" />
+            <ToggleRow title="Animationen" description="Sanfte Bewegungen und Übergänge verwenden." value={appearance.animations} onChange={() => setAppearance(v => ({ ...v, animations: !v.animations }))} />
+            <ToggleRow title="Hintergrund-Effekt" description="Den animierten Amber-Hintergrund anzeigen." value={appearance.background} onChange={() => setAppearance(v => ({ ...v, background: !v.background }))} />
+            <ToggleRow title="Kompakte Darstellung" description="Listen und Karten etwas platzsparender darstellen." value={appearance.compact} onChange={() => setAppearance(v => ({ ...v, compact: !v.compact }))} />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection icon={<CalendarDays size={21} />} eyebrow="Kalender" title="Kalender" description="Bereite die spätere Kalenderanbindung vor.">
+          <ActionRow icon={<CalendarDays size={18} />} title="Kalender verbinden" description="Google, Apple oder Outlook können später angebunden werden." />
+          <p className="mt-3 rounded-2xl border border-blue-400/15 bg-blue-400/[0.06] p-4 text-sm leading-6 text-blue-200/65">Deine Dienste können in der finalen Version automatisch in einen Kalender übernommen werden.</p>
+        </SettingsSection>
+
+        <SettingsSection icon={<Eye size={21} />} eyebrow="Datenschutz" title="Sichtbarkeit" description="Bestimme, welche Informationen andere Mitglieder sehen dürfen.">
+          <div className="space-y-3">
+            <ToggleRow title="Profil sichtbar" description="Dein Name und grundlegende Profilinformationen anzeigen." value={privacy.profile} onChange={() => setPrivacy(v => ({ ...v, profile: !v.profile }))} />
+            <ToggleRow title="Punkte sichtbar" description="Deinen Punktestand für andere Mitglieder anzeigen." value={privacy.points} onChange={() => setPrivacy(v => ({ ...v, points: !v.points }))} />
+            <ToggleRow title="Ranking sichtbar" description="Deine Position in der Rangliste anzeigen." value={privacy.ranking} onChange={() => setPrivacy(v => ({ ...v, ranking: !v.ranking }))} />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection icon={<Shield size={21} />} eyebrow="Sicherheit" title="Sicherheit" description="Weitere Sicherheitsfunktionen werden mit Supabase Auth verbunden.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ActionRow icon={<Lock size={18} />} title="Passwort ändern" description="Für das echte Konto verfügbar." />
+            <ActionRow icon={<Shield size={18} />} title="Angemeldete Geräte" description="Später aktive Sitzungen verwalten." />
+          </div>
+        </SettingsSection>
+
+        <SettingsSection icon={<Globe2 size={21} />} eyebrow="Sprache" title="Sprache & Region" description="Aktuell ist MGB Connect auf Deutsch ausgelegt.">
+          <InfoRow title="Sprache" value="Deutsch" />
+          <InfoRow title="Zeitzone" value="Europe/Berlin" />
+        </SettingsSection>
+
+        <SettingsSection icon={<Settings2 size={21} />} eyebrow="Entwicklung" title="Rolle testen" description="Nur für die aktuelle Entwicklungsphase. Im echten Login wird die Rolle aus deinem Benutzerkonto geladen.">
           <div className="grid gap-3">
-            {roleOptions.map((option) => {
-              const isActive =
-                option.role === role;
-
-              return (
-                <button
-                  key={option.role}
-                  type="button"
-                  onClick={() =>
-                    handleRoleChange(option.role)
-                  }
-                  className={`
-                    group
-                    flex
-                    w-full
-                    items-center
-                    justify-between
-                    gap-5
-                    rounded-2xl
-                    border
-                    p-5
-                    text-left
-                    transition
-                    ${
-                      isActive
-                        ? `
-                          border-amber-400/30
-                          bg-amber-400/[0.09]
-                        `
-                        : `
-                          border-white/10
-                          bg-white/[0.03]
-                          hover:border-white/20
-                          hover:bg-white/[0.05]
-                        `
-                    }
-                  `}
-                >
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <p className="font-bold text-white">
-                        {option.title}
-                      </p>
-
-                      {isActive && (
-                        <span
-                          className="
-                            rounded-full
-                            border
-                            border-amber-400/20
-                            bg-amber-400/10
-                            px-2.5
-                            py-1
-                            text-xs
-                            font-semibold
-                            text-amber-300
-                          "
-                        >
-                          Aktiv
-                        </span>
-                      )}
-                    </div>
-
-                    <p
-                      className="
-                        mt-2
-                        max-w-2xl
-                        text-sm
-                        leading-6
-                        text-white/50
-                      "
-                    >
-                      {option.description}
-                    </p>
-                  </div>
-
-                  {isActive ? (
-                    <div
-                      className="
-                        flex
-                        h-10
-                        w-10
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-xl
-                        border
-                        border-amber-400/20
-                        bg-amber-400/10
-                        text-amber-300
-                      "
-                    >
-                      <Check size={18} />
-                    </div>
-                  ) : (
-                    <ChevronRight
-                      size={20}
-                      className="
-                        shrink-0
-                        text-white/25
-                        transition
-                        group-hover:translate-x-0.5
-                        group-hover:text-white/60
-                      "
-                    />
-                  )}
-                </button>
-              );
-            })}
+            {roleOptions.map(option => (
+              <button key={option.role} type="button" onClick={() => setRole(option.role)} className={`group flex w-full items-center justify-between gap-5 rounded-2xl border p-5 text-left transition ${option.role === role ? "border-amber-400/30 bg-amber-400/[0.09]" : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"}`}>
+                <div><div className="flex items-center gap-3"><p className="font-bold text-white">{option.title}</p>{option.role === role && <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-300">Aktiv</span>}</div><p className="mt-2 text-sm leading-6 text-white/50">{option.description}</p></div>
+                {option.role === role ? <Check size={20} className="shrink-0 text-amber-300" /> : <ChevronRight size={20} className="shrink-0 text-white/25 group-hover:text-white/60" />}
+              </button>
+            ))}
           </div>
         </SettingsSection>
 
-        {/* ====================================================
-            APPEARANCE
-        ==================================================== */}
-
-        <SettingsSection
-          icon={<Palette size={21} />}
-          eyebrow="Darstellung"
-          title="App-Erscheinungsbild"
-          description="
-            MGB Connect verwendet aktuell das zentrale
-            Dark-Interface mit Amber-Akzenten.
-          "
-        >
-          <div
-            className="
-              rounded-2xl
-              border
-              border-white/10
-              bg-white/[0.03]
-              p-5
-            "
-          >
-            <div className="flex items-center justify-between gap-5">
-              <div>
-                <p className="font-semibold text-white">
-                  MGB Connect Dark
-                </p>
-
-                <p className="mt-1 text-sm text-white/45">
-                  Das Erscheinungsbild wird zentral über das
-                  bestehende Design-System gesteuert.
-                </p>
-              </div>
-
-              <div
-                className="
-                  flex
-                  h-10
-                  w-10
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-xl
-                  border
-                  border-amber-400/20
-                  bg-amber-400/10
-                  text-amber-300
-                "
-              >
-                <Palette size={18} />
-              </div>
-            </div>
-          </div>
-        </SettingsSection>
-
-        {/* ====================================================
-            DATABASE / FUTURE
-        ==================================================== */}
-
-        <SettingsSection
-          icon={<Database size={21} />}
-          eyebrow="System"
-          title="Daten & Benutzerverwaltung"
-          description="
-            Die aktuelle Version arbeitet noch mit der
-            Entwicklungsdatenstruktur. Der nächste große
-            Schritt ist die Verbindung mit Supabase.
-          "
-        >
-          <div
-            className="
-              rounded-2xl
-              border
-              border-blue-400/20
-              bg-blue-400/[0.07]
-              p-5
-            "
-          >
-            <div className="flex items-start gap-4">
-              <div
-                className="
-                  flex
-                  h-11
-                  w-11
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-xl
-                  border
-                  border-blue-400/15
-                  bg-blue-400/10
-                  text-blue-300
-                "
-              >
-                <Shield size={20} />
-              </div>
-
-              <div>
-                <p className="font-semibold text-white">
-                  Bereit für Supabase
-                </p>
-
-                <p className="mt-2 text-sm leading-6 text-white/55">
-                  Die Rollenstruktur ist bereits vorbereitet.
-                  Später werden Benutzer, Rollen, Dienste,
-                  Punkte und Tauschvorgänge dauerhaft in der
-                  Datenbank gespeichert.
-                </p>
-              </div>
-            </div>
-          </div>
-        </SettingsSection>
-
-        {/* ====================================================
-            APP INFO
-        ==================================================== */}
-
-        <div
-          className="
-            mt-10
-            flex
-            items-center
-            gap-4
-            rounded-2xl
-            border
-            border-white/10
-            bg-white/[0.025]
-            p-5
-            text-white/40
-          "
-        >
-          <Settings2
-            size={19}
-            className="shrink-0"
-          />
-
-          <p className="text-sm leading-6">
-            Einstellungen werden in der finalen Version mit
-            deinem persönlichen Benutzerkonto verbunden.
-          </p>
-        </div>
+        <div className="mt-10 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-5 text-white/40"><Settings2 size={19} /><p className="text-sm leading-6">MGB Connect · Entwicklungsstand V1 · Viele Einstellungen werden nach dem Datenbank-Launch dauerhaft gespeichert.</p></div>
       </section>
     </main>
   );
 }
 
-/* ===============================================================
-   SETTINGS SECTION
-=============================================================== */
+function InfoRow({ title, value }: { title: string; value: string }) {
+  return <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4"><span className="text-sm text-white/45">{title}</span><span className="text-sm font-semibold text-white/80">{value}</span></div>;
+}
 
-function SettingsSection({
-  icon,
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  icon: React.ReactNode;
-  eyebrow: string;
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="
-        mt-8
-        rounded-[30px]
-        border
-        border-white/10
-        bg-white/[0.045]
-        p-6
-        backdrop-blur-2xl
-        sm:p-7
-      "
-    >
-      <div className="flex items-start gap-4">
-        <div
-          className="
-            flex
-            h-11
-            w-11
-            shrink-0
-            items-center
-            justify-center
-            rounded-xl
-            border
-            border-amber-400/15
-            bg-amber-400/10
-            text-amber-300
-          "
-        >
-          {icon}
-        </div>
+function ActionRow({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+  return <button type="button" className="flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.05]"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">{icon}</div><div className="min-w-0 flex-1"><p className="font-semibold text-white">{title}</p><p className="mt-1 text-sm leading-6 text-white/45">{description}</p></div><ChevronRight size={18} className="shrink-0 text-white/25" /></button>;
+}
 
-        <div>
-          <p
-            className="
-              text-sm
-              uppercase
-              tracking-[0.18em]
-              text-white/40
-            "
-          >
-            {eyebrow}
-          </p>
-
-          <h2 className="mt-1 text-2xl font-bold text-white">
-            {title}
-          </h2>
-
-          <p
-            className="
-              mt-2
-              max-w-2xl
-              leading-7
-              text-white/55
-            "
-          >
-            {description}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        {children}
-      </div>
-    </div>
-  );
+function SettingsSection({ icon, eyebrow, title, description, children }: { icon: React.ReactNode; eyebrow: string; title: string; description: string; children: React.ReactNode }) {
+  return <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-6 backdrop-blur-2xl sm:p-7"><div className="flex items-start gap-4"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">{icon}</div><div><p className="text-sm uppercase tracking-[0.18em] text-white/40">{eyebrow}</p><h2 className="mt-1 text-2xl font-bold text-white">{title}</h2><p className="mt-2 max-w-2xl leading-7 text-white/55">{description}</p></div></div><div className="mt-6">{children}</div></div>;
 }
