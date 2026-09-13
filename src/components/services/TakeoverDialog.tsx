@@ -130,10 +130,10 @@ export default function TakeoverDialog({
               text-white/60
             "
           >
-            Mit der Bestätigung stellst du eine
-            Übernahmeanfrage für diesen Dienst. Die Anfrage
-            wird anschließend gespeichert und muss gegebenenfalls
-            noch von der Leitung bestätigt werden.
+            Mit der Bestätigung übernimmst du den Dienst
+            direkt. Die Übernahme wird automatisch wirksam
+            und muss nicht erst von der Leitung bestätigt
+            werden.
           </p>
         </div>
 
@@ -146,8 +146,8 @@ export default function TakeoverDialog({
             mt-5
             rounded-2xl
             border
-            border-blue-400/15
-            bg-blue-400/[0.07]
+            border-emerald-400/15
+            bg-emerald-400/[0.07]
             px-4
             py-3
           "
@@ -156,11 +156,12 @@ export default function TakeoverDialog({
             className="
               text-sm
               leading-6
-              text-blue-200/80
+              text-emerald-200/80
             "
           >
-            Prüfe vor der Bestätigung bitte noch einmal Datum
-            und Uhrzeit des Dienstes.
+            Nach der Übernahme kannst du den Dienst direkt
+            in deinen eigenen Diensten sehen. Die Leitung
+            kann die Übernahme bei Bedarf noch ablehnen.
           </p>
         </div>
 
