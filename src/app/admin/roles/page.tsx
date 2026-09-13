@@ -1,20 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Check,
-  ShieldCheck,
-  Users,
-  UserRound,
-  CalendarDays,
   BarChart3,
+  CalendarDays,
+  Check,
+  CheckCircle2,
+  ChevronDown,
   ClipboardList,
-  Megaphone,
-  Settings,
-  UserCog,
   Lock,
+  Megaphone,
+  Save,
+  Search,
+  Settings,
+  ShieldCheck,
+  UserCog,
+  UserRound,
+  Users,
+  X,
 } from "lucide-react";
 
 import Background from "@/components/layout/Background";
@@ -31,10 +36,6 @@ import {
   type UserRole,
 } from "@/lib/permissions";
 
-/* ============================================================
-   PERMISSION META
-============================================================ */
-
 type PermissionMeta = {
   permission: Permission;
   title: string;
@@ -46,87 +47,64 @@ const permissionMeta: PermissionMeta[] = [
   {
     permission: "view_leader_area",
     title: "Leiterbereich",
-    description:
-      "Zugriff auf die zentrale Übersicht für die Leitung.",
+    description: "Zugriff auf die zentrale Übersicht für die Leitung.",
     icon: <ShieldCheck size={18} />,
   },
-
   {
     permission: "view_team",
     title: "Messdiener einsehen",
-    description:
-      "Messdiener und deren Informationen einsehen.",
+    description: "Messdiener und deren Informationen einsehen.",
     icon: <Users size={18} />,
   },
-
   {
     permission: "view_service_management",
     title: "Dienstverwaltung",
-    description:
-      "Dienste prüfen und verwalten.",
+    description: "Dienste prüfen und verwalten.",
     icon: <ClipboardList size={18} />,
   },
-
   {
     permission: "view_statistics",
     title: "Statistiken",
-    description:
-      "Statistiken und Auswertungen einsehen.",
+    description: "Statistiken und Auswertungen einsehen.",
     icon: <BarChart3 size={18} />,
   },
-
   {
     permission: "confirm_requests",
-    title: "Anfragen bestätigen",
-    description:
-      "Übernahmen und Anfragen bestätigen oder bearbeiten.",
+    title: "Übernahmen bearbeiten",
+    description: "Übernahmen prüfen und bei Bedarf ablehnen.",
     icon: <Check size={18} />,
   },
-
   {
     permission: "manage_schedule",
     title: "Messdienerplan verwalten",
-    description:
-      "Dienste und Messdienerpläne verwalten.",
+    description: "Dienste und Messdienerpläne verwalten.",
     icon: <CalendarDays size={18} />,
   },
-
   {
     permission: "manage_members",
     title: "Benutzer verwalten",
-    description:
-      "Benutzer und Mitglieder verwalten.",
+    description: "Benutzer und Mitglieder verwalten.",
     icon: <UserCog size={18} />,
   },
-
   {
     permission: "manage_roles",
-    title: "Rollen verwalten",
-    description:
-      "Rollen und Berechtigungen verwalten.",
+    title: "Rollen & Rechte verwalten",
+    description: "Rollen und Berechtigungen konfigurieren.",
     icon: <ShieldCheck size={18} />,
   },
-
   {
     permission: "manage_announcements",
     title: "Ankündigungen verwalten",
-    description:
-      "Ankündigungen erstellen und verwalten.",
+    description: "Ankündigungen erstellen und verwalten.",
     icon: <Megaphone size={18} />,
   },
-
   {
     permission: "manage_system",
     title: "System verwalten",
-    description:
-      "Globale Systemeinstellungen verwalten.",
+    description: "Globale Systemeinstellungen verwalten.",
     icon: <Settings size={18} />,
   },
 ];
-
-/* ============================================================
-   ROLLEN META
-============================================================ */
 
 const roleOrder: UserRole[] = [
   "messdiener",
@@ -136,108 +114,123 @@ const roleOrder: UserRole[] = [
 ];
 
 const roleIcons: Record<UserRole, React.ReactNode> = {
-  messdiener: <UserRound size={24} />,
-  leiter: <Users size={24} />,
-  planschreiber: <CalendarDays size={24} />,
-  admin: <ShieldCheck size={24} />,
+  messdiener: <UserRound size={23} />,
+  leiter: <Users size={23} />,
+  planschreiber: <CalendarDays size={23} />,
+  admin: <ShieldCheck size={23} />,
 };
 
-/* ============================================================
-   PAGE
-============================================================ */
+const demoMembers = [
+  { id: "tim", name: "Tim Mustermann", role: "messdiener" as UserRole },
+  { id: "max", name: "Max Mustermann", role: "messdiener" as UserRole },
+  { id: "anna", name: "Anna Beispiel", role: "leiter" as UserRole },
+  { id: "thomas", name: "Thomas Leiter", role: "leiter" as UserRole },
+];
 
 export default function AdminRolesPage() {
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<UserRole>("leiter");
+  const [selectedMember, setSelectedMember] = useState("anna");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [saved, setSaved] = useState(false);
 
   const { role } = useRole();
+  const isAllowed = hasPermission(role, "manage_roles");
 
-  const isAllowed =
-    hasPermission(role, "manage_roles");
+  const [rolePermissions, setRolePermissions] = useState<
+    Record<UserRole, Permission[]>
+  >(() => ({
+    messdiener: [...permissions.messdiener],
+    leiter: [...permissions.leiter],
+    planschreiber: [...permissions.planschreiber],
+    admin: [...permissions.admin],
+  }));
+
+  const [memberOverrides, setMemberOverrides] = useState<
+    Record<string, Permission[]>
+  >({
+    anna: [],
+    thomas: [],
+    tim: [],
+    max: [],
+  });
+
+  const filteredMembers = useMemo(() => {
+    const query = memberSearch.trim().toLowerCase();
+
+    if (!query) return demoMembers;
+
+    return demoMembers.filter((member) =>
+      member.name.toLowerCase().includes(query)
+    );
+  }, [memberSearch]);
+
+  const selectedMemberData =
+    demoMembers.find((member) => member.id === selectedMember) ??
+    demoMembers[0];
+
+  const toggleRolePermission = (permission: Permission) => {
+    setSaved(false);
+
+    setRolePermissions((current) => {
+      const currentPermissions = current[selectedRole];
+      const has = currentPermissions.includes(permission);
+
+      return {
+        ...current,
+        [selectedRole]: has
+          ? currentPermissions.filter((item) => item !== permission)
+          : [...currentPermissions, permission],
+      };
+    });
+  };
+
+  const toggleMemberOverride = (permission: Permission) => {
+    setSaved(false);
+
+    setMemberOverrides((current) => {
+      const currentOverrides = current[selectedMember] ?? [];
+      const has = currentOverrides.includes(permission);
+
+      return {
+        ...current,
+        [selectedMember]: has
+          ? currentOverrides.filter((item) => item !== permission)
+          : [...currentOverrides, permission],
+      };
+    });
+  };
+
+  const handleSave = () => {
+    setSaved(true);
+  };
 
   if (!isAllowed) {
     return (
       <main className="relative min-h-screen overflow-hidden">
         <Background />
-
-        <Sidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <Topbar
           sidebarOpen={sidebarOpen}
           onMenuClick={() => setSidebarOpen(true)}
         />
 
-        <section
-          className="
-            relative
-            z-10
-            mx-auto
-            max-w-5xl
-            px-6
-            pb-12
-            pt-36
-          "
-        >
+        <section className="relative z-10 mx-auto max-w-5xl px-6 pb-12 pt-36">
           <Link
             href="/"
-            className="
-              mb-8
-              inline-flex
-              items-center
-              gap-2
-              text-white/55
-              transition
-              hover:text-white
-            "
+            className="mb-8 inline-flex items-center gap-2 text-white/55 transition hover:text-white"
           >
             <ArrowLeft size={18} />
             Zurück zum Dashboard
           </Link>
 
-          <div
-            className="
-              rounded-[30px]
-              border
-              border-red-400/20
-              bg-red-400/[0.07]
-              p-8
-              backdrop-blur-2xl
-            "
-          >
-            <div
-              className="
-                flex
-                h-14
-                w-14
-                items-center
-                justify-center
-                rounded-2xl
-                border
-                border-red-400/20
-                bg-red-400/10
-                text-red-300
-              "
-            >
+          <div className="rounded-[30px] border border-red-400/20 bg-red-400/[0.07] p-8 backdrop-blur-2xl">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-red-400/20 bg-red-400/10 text-red-300">
               <Lock size={25} />
             </div>
-
-            <h1
-              className="
-                mt-5
-                text-3xl
-                font-black
-                text-white
-              "
-            >
-              Kein Zugriff
-            </h1>
-
+            <h1 className="mt-5 text-3xl font-black text-white">Kein Zugriff</h1>
             <p className="mt-3 max-w-xl leading-7 text-white/60">
-              Du besitzt aktuell keine Berechtigung,
-              Rollen und Rechte zu verwalten.
+              Du besitzt aktuell keine Berechtigung, Rollen und Rechte zu verwalten.
             </p>
           </div>
         </section>
@@ -249,292 +242,323 @@ export default function AdminRolesPage() {
     <main className="relative min-h-screen overflow-hidden">
       <Background />
 
-      {/* ======================================================
-          TOP OVERLAY
-      ====================================================== */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 z-30 h-32 bg-gradient-to-b from-[#050505] via-[#050505]/92 to-transparent" />
 
-      <div
-        className="
-          pointer-events-none
-          fixed
-          inset-x-0
-          top-0
-          z-30
-          h-32
-          bg-gradient-to-b
-          from-[#050505]
-          via-[#050505]/92
-          to-transparent
-        "
-      />
-
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <Topbar
         sidebarOpen={sidebarOpen}
         onMenuClick={() => setSidebarOpen(true)}
       />
 
-      <section
-        className="
-          relative
-          z-10
-          mx-auto
-          max-w-6xl
-          px-6
-          pb-16
-          pt-36
-        "
-      >
-        {/* ====================================================
-            BACK
-        ==================================================== */}
-
+      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-16 pt-36">
         <Link
           href="/admin"
-          className="
-            mb-8
-            inline-flex
-            items-center
-            gap-2
-            text-white/55
-            transition
-            hover:text-white
-          "
+          className="mb-8 inline-flex items-center gap-2 text-white/55 transition hover:text-white"
         >
           <ArrowLeft size={18} />
           Zurück zur Administration
         </Link>
 
-        {/* ====================================================
-            HEADER
-        ==================================================== */}
-
         <div className="mb-10">
-          <div
-            className="
-              flex
-              items-center
-              gap-3
-            "
-          >
-            <div
-              className="
-                flex
-                h-11
-                w-11
-                items-center
-                justify-center
-                rounded-2xl
-                border
-                border-amber-400/20
-                bg-amber-400/10
-                text-amber-300
-              "
-            >
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
               <ShieldCheck size={22} />
             </div>
-
-            <p
-              className="
-                text-sm
-                uppercase
-                tracking-[0.22em]
-                text-amber-300/80
-              "
-            >
+            <p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">
               Administration
             </p>
           </div>
 
-          <h1
-            className="
-              mt-4
-              text-5xl
-              font-black
-              tracking-tight
-              text-white
-            "
-          >
+          <h1 className="mt-4 text-5xl font-black tracking-tight text-white">
             Rollen & Rechte
           </h1>
-
-          <p
-            className="
-              mt-3
-              max-w-2xl
-              text-lg
-              leading-7
-              text-white/60
-            "
-          >
-            Übersicht der aktuell definierten Rollen
-            und ihrer Berechtigungen in MGB Connect.
+          <p className="mt-3 max-w-2xl text-lg leading-7 text-white/60">
+            Rollen zentral konfigurieren und später einzelne Berechtigungen für bestimmte Benutzer anpassen.
           </p>
         </div>
 
-        {/* ====================================================
-            INFO
-        ==================================================== */}
+        <div className="mb-8 grid gap-4 md:grid-cols-3">
+          <InfoCard
+            icon={<ShieldCheck size={20} />}
+            label="Rollen"
+            value={String(roleOrder.length)}
+          />
+          <InfoCard
+            icon={<Settings size={20} />}
+            label="Berechtigungen"
+            value={String(permissionMeta.length)}
+          />
+          <InfoCard
+            icon={<Users size={20} />}
+            label="Individuelle Ausnahmen"
+            value={String(Object.values(memberOverrides).filter((items) => items.length > 0).length)}
+          />
+        </div>
 
-        <div
-          className="
-            mb-8
-            rounded-2xl
-            border
-            border-amber-400/15
-            bg-amber-400/[0.06]
-            p-5
-          "
-        >
-          <div className="flex gap-4">
-            <div
-              className="
-                flex
-                h-10
-                w-10
-                shrink-0
-                items-center
-                justify-center
-                rounded-xl
-                bg-amber-400/10
-                text-amber-300
-              "
-            >
+        <div className="mb-10 rounded-[28px] border border-amber-400/15 bg-amber-400/[0.055] p-5 backdrop-blur-2xl">
+          <div className="flex items-start gap-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/10 text-amber-300">
               <ShieldCheck size={20} />
             </div>
-
             <div>
-              <h2 className="font-bold text-white">
-                Aktuelles Berechtigungssystem
-              </h2>
-
+              <h2 className="font-bold text-white">Flexibles Berechtigungssystem</h2>
               <p className="mt-1 leading-6 text-white/55">
-                Diese Übersicht basiert direkt auf den
-                zentralen Rollen und Berechtigungen des
-                aktuellen Systems. Änderungen an den
-                Berechtigungen werden später mit der
-                Datenbank und Benutzerverwaltung verbunden.
+                Die Rollen liefern die Standardrechte. Zusätzlich kann später für einzelne Benutzer eine Ausnahme gesetzt werden. Die aktuelle Oberfläche speichert diese Änderungen zunächst nur für die laufende Sitzung; die dauerhafte Speicherung kommt mit der Datenbank.
               </p>
             </div>
           </div>
         </div>
 
-        {/* ====================================================
-            ROLLEN
-        ==================================================== */}
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.4fr]">
+          <div>
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.18em] text-white/35">Standardrechte</p>
+                <h2 className="mt-1 text-2xl font-black text-white">Rollen</h2>
+              </div>
+              <span className="text-sm text-white/30">Auswählen</span>
+            </div>
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          {roleOrder.map((roleId) => {
-            const roleDefinition =
-              roles[roleId];
+            <div className="space-y-3">
+              {roleOrder.map((roleId) => {
+                const active = selectedRole === roleId;
+                const roleDefinition = roles[roleId];
 
-            const rolePermissions =
-              permissions[roleId];
+                return (
+                  <button
+                    key={roleId}
+                    type="button"
+                    onClick={() => {
+                      setSelectedRole(roleId);
+                      setSaved(false);
+                    }}
+                    className={`w-full rounded-2xl border p-4 text-left transition ${
+                      active
+                        ? "border-amber-400/30 bg-amber-400/[0.09]"
+                        : "border-white/10 bg-white/[0.04] hover:border-white/15 hover:bg-white/[0.055]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${active ? "border-amber-400/20 bg-amber-400/10 text-amber-300" : "border-white/10 bg-white/[0.04] text-white/45"}`}>
+                        {roleIcons[roleId]}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="font-bold text-white">{roleDefinition.label}</h3>
+                          <span className="text-sm font-semibold text-white/45">
+                            {rolePermissions[roleId].length}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm leading-5 text-white/40">
+                          {roleDefinition.description}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-            return (
-              <RoleCard
-                key={roleId}
-                role={roleId}
-                title={roleDefinition.label}
-                description={
-                  roleDefinition.description
-                }
-                permissions={rolePermissions}
-              />
-            );
-          })}
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-6 backdrop-blur-2xl">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.18em] text-amber-300/70">
+                  Rolle konfigurieren
+                </p>
+                <h2 className="mt-1 text-3xl font-black text-white">
+                  {roles[selectedRole].label}
+                </h2>
+                <p className="mt-2 max-w-xl text-sm leading-6 text-white/45">
+                  Aktiviere oder deaktiviere die Standardrechte dieser Rolle.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-right">
+                <p className="text-xs text-white/30">Aktiv</p>
+                <p className="mt-1 text-xl font-black text-white">
+                  {rolePermissions[selectedRole].length}/{permissionMeta.length}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-2">
+              {permissionMeta.map((item) => {
+                const enabled = rolePermissions[selectedRole].includes(item.permission);
+
+                return (
+                  <PermissionRow
+                    key={item.permission}
+                    title={item.title}
+                    description={item.description}
+                    icon={item.icon}
+                    enabled={enabled}
+                    onToggle={() => toggleRolePermission(item.permission)}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* ====================================================
-            BERECHTIGUNGEN
-        ==================================================== */}
+        <div className="mt-12">
+          <div className="mb-5">
+            <p className="text-sm uppercase tracking-[0.18em] text-white/35">Individuelle Ausnahmen</p>
+            <h2 className="mt-1 text-3xl font-black text-white">Berechtigungen pro Benutzer</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">
+              Ein Benutzer behält seine Rolle, kann aber bei Bedarf einzelne zusätzliche Rechte erhalten oder später gezielt entzogen bekommen.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-5 backdrop-blur-2xl">
+              <div className="relative">
+                <Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/25" />
+                <input
+                  value={memberSearch}
+                  onChange={(event) => setMemberSearch(event.target.value)}
+                  placeholder="Benutzer suchen..."
+                  className="w-full rounded-2xl border border-white/10 bg-black/10 py-3 pl-11 pr-4 text-sm text-white outline-none placeholder:text-white/25 focus:border-amber-400/25"
+                />
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {filteredMembers.map((member) => {
+                  const active = selectedMember === member.id;
+                  const overrideCount = memberOverrides[member.id]?.length ?? 0;
+
+                  return (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedMember(member.id);
+                        setSaved(false);
+                      }}
+                      className={`w-full rounded-2xl border p-4 text-left transition ${active ? "border-amber-400/25 bg-amber-400/[0.08]" : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${active ? "border-amber-400/20 bg-amber-400/10 text-amber-300" : "border-white/10 bg-white/[0.04] text-white/35"}`}>
+                          <UserRound size={18} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-white">{member.name}</p>
+                          <p className="mt-0.5 text-xs text-white/35">{roles[member.role].label}</p>
+                        </div>
+                        {overrideCount > 0 && (
+                          <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-300">
+                            +{overrideCount}
+                          </span>
+                        )}
+                        <ChevronDown size={16} className={`text-white/20 transition ${active ? "-rotate-90 text-amber-300/60" : "-rotate-90"}`} />
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {filteredMembers.length === 0 && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-6 text-center text-sm text-white/35">
+                    Kein Benutzer gefunden.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-6 backdrop-blur-2xl">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-400/15 bg-amber-400/10 text-amber-300">
+                  <UserRound size={22} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm uppercase tracking-[0.18em] text-amber-300/70">Benutzer</p>
+                  <h3 className="mt-1 text-2xl font-black text-white">{selectedMemberData.name}</h3>
+                  <p className="mt-1 text-sm text-white/40">
+                    Standardrolle: {roles[selectedMemberData.role].label}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-white/10 bg-black/[0.08] p-4">
+                <p className="text-sm font-semibold text-white">Individuelle Rechte</p>
+                <p className="mt-1 text-sm leading-6 text-white/40">
+                  Diese Rechte sind Ausnahmen von der normalen Rolle und werden später dauerhaft in der Datenbank gespeichert.
+                </p>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {permissionMeta.map((item) => {
+                  const roleHas = rolePermissions[selectedMemberData.role].includes(item.permission);
+                  const overrideHas = memberOverrides[selectedMemberData.id]?.includes(item.permission) ?? false;
+
+                  return (
+                    <div key={item.permission} className="rounded-2xl border border-white/[0.07] bg-black/[0.06] p-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${roleHas ? "bg-emerald-400/10 text-emerald-300" : overrideHas ? "bg-amber-400/10 text-amber-300" : "bg-white/5 text-white/20"}`}>
+                          {roleHas ? <Check size={16} /> : overrideHas ? <Check size={16} /> : <X size={15} />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-white">{item.title}</p>
+                          <p className="mt-0.5 text-xs text-white/30">
+                            {roleHas ? "Durch Rolle aktiv" : overrideHas ? "Individuell aktiviert" : "Nicht aktiv"}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleMemberOverride(item.permission)}
+                          disabled={roleHas}
+                          className={`relative h-7 w-12 shrink-0 rounded-full border transition ${roleHas ? "cursor-not-allowed border-emerald-400/20 bg-emerald-400/10 opacity-70" : overrideHas ? "border-amber-400/30 bg-amber-400/15" : "border-white/10 bg-white/[0.05] hover:border-white/20"}`}
+                          aria-label={`${item.title} individuell ${overrideHas ? "deaktivieren" : "aktivieren"}`}
+                        >
+                          <span className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition ${roleHas || overrideHas ? "left-[22px] bg-white" : "left-1 bg-white/30"}`} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-[24px] border border-white/10 bg-white/[0.035] p-4">
+          <div className="flex items-center gap-3">
+            {saved ? (
+              <>
+                <CheckCircle2 size={19} className="text-emerald-300" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Änderungen übernommen</p>
+                  <p className="text-xs text-white/35">Aktuell nur für diese Sitzung. Die Datenbank folgt als nächster Schritt.</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-white/35">Änderungen sind noch nicht gespeichert.</p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-5 py-3 text-sm font-semibold text-amber-200 transition hover:border-amber-400/40 hover:bg-amber-400/15"
+          >
+            <Save size={17} />
+            Änderungen speichern
+          </button>
+        </div>
 
         <div className="mt-12">
-          <p
-            className="
-              text-sm
-              uppercase
-              tracking-[0.2em]
-              text-white/40
-            "
-          >
-            Berechtigungsübersicht
-          </p>
-
-          <h2
-            className="
-              mt-2
-              text-3xl
-              font-black
-              text-white
-            "
-          >
-            Alle verfügbaren Rechte
-          </h2>
-
+          <p className="text-sm uppercase tracking-[0.2em] text-white/35">Berechtigungsübersicht</p>
+          <h2 className="mt-2 text-3xl font-black text-white">Alle verfügbaren Rechte</h2>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
             {permissionMeta.map((item) => (
-              <div
-                key={item.permission}
-                className="
-                  rounded-2xl
-                  border
-                  border-white/10
-                  bg-white/[0.04]
-                  p-4
-                  backdrop-blur-xl
-                "
-              >
+              <div key={item.permission} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 backdrop-blur-xl">
                 <div className="flex gap-3">
-                  <div
-                    className="
-                      mt-0.5
-                      flex
-                      h-9
-                      w-9
-                      shrink-0
-                      items-center
-                      justify-center
-                      rounded-xl
-                      border
-                      border-amber-400/15
-                      bg-amber-400/10
-                      text-amber-300
-                    "
-                  >
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">
                     {item.icon}
                   </div>
-
                   <div>
-                    <h3 className="font-semibold text-white">
-                      {item.title}
-                    </h3>
-
-                    <p
-                      className="
-                        mt-1
-                        text-sm
-                        leading-6
-                        text-white/50
-                      "
-                    >
-                      {item.description}
-                    </p>
-
-                    <p
-                      className="
-                        mt-3
-                        font-mono
-                        text-xs
-                        text-white/25
-                      "
-                    >
-                      {item.permission}
-                    </p>
+                    <h3 className="font-semibold text-white">{item.title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-white/50">{item.description}</p>
+                    <p className="mt-3 font-mono text-xs text-white/25">{item.permission}</p>
                   </div>
                 </div>
               </div>
@@ -546,179 +570,61 @@ export default function AdminRolesPage() {
   );
 }
 
-/* ============================================================
-   ROLE CARD
-============================================================ */
-
-function RoleCard({
-  role,
-  title,
-  description,
-  permissions: rolePermissions,
+function InfoCard({
+  icon,
+  label,
+  value,
 }: {
-  role: UserRole;
-  title: string;
-  description: string;
-  permissions: Permission[];
+  icon: React.ReactNode;
+  label: string;
+  value: string;
 }) {
-  const icon = roleIcons[role];
-
-  const roleColor: Record<
-    UserRole,
-    string
-  > = {
-    messdiener:
-      "border-white/10 bg-white/[0.04] text-white/70",
-
-    leiter:
-      "border-blue-400/20 bg-blue-400/[0.07] text-blue-300",
-
-    planschreiber:
-      "border-amber-400/20 bg-amber-400/[0.07] text-amber-300",
-
-    admin:
-      "border-violet-400/20 bg-violet-400/[0.07] text-violet-300",
-  };
-
   return (
-    <div
-      className={`
-        rounded-[28px]
-        border
-        p-6
-        backdrop-blur-2xl
-        ${roleColor[role]}
-      `}
-    >
-      {/* HEADER */}
-
-      <div className="flex items-start gap-4">
-        <div
-          className="
-            flex
-            h-12
-            w-12
-            shrink-0
-            items-center
-            justify-center
-            rounded-2xl
-            border
-            border-white/10
-            bg-black/10
-          "
-        >
+    <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-xl">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">
           {icon}
         </div>
-
         <div>
-          <h2 className="text-2xl font-black text-white">
-            {title}
-          </h2>
-
-          <p
-            className="
-              mt-2
-              text-sm
-              leading-6
-              text-white/55
-            "
-          >
-            {description}
-          </p>
+          <p className="text-xs text-white/35">{label}</p>
+          <p className="mt-0.5 text-xl font-black text-white">{value}</p>
         </div>
       </div>
-
-      {/* PERMISSION COUNT */}
-
-      <div
-        className="
-          mt-6
-          flex
-          items-center
-          justify-between
-          rounded-xl
-          border
-          border-white/10
-          bg-black/10
-          px-4
-          py-3
-        "
-      >
-        <span className="text-sm text-white/50">
-          Berechtigungen
-        </span>
-
-        <span className="font-bold text-white">
-          {rolePermissions.length}
-        </span>
-      </div>
-
-      {/* PERMISSIONS */}
-
-      <div className="mt-4 space-y-2">
-        {permissionMeta.map((item) => {
-          const allowed =
-            rolePermissions.includes(
-              item.permission
-            );
-
-          return (
-            <div
-              key={item.permission}
-              className="
-                flex
-                items-center
-                gap-3
-                rounded-xl
-                border
-                border-white/[0.07]
-                bg-black/[0.08]
-                px-3
-                py-2.5
-              "
-            >
-              <div
-                className={`
-                  flex
-                  h-7
-                  w-7
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-lg
-                  ${
-                    allowed
-                      ? `
-                        bg-emerald-400/10
-                        text-emerald-300
-                      `
-                      : `
-                        bg-white/5
-                        text-white/20
-                      `
-                  }
-                `}
-              >
-                {allowed ? (
-                  <Check size={15} />
-                ) : (
-                  <Lock size={13} />
-                )}
-              </div>
-
-              <span
-                className={
-                  allowed
-                    ? "text-sm text-white/80"
-                    : "text-sm text-white/30"
-                }
-              >
-                {item.title}
-              </span>
-            </div>
-          );
-        })}
-      </div>
     </div>
+  );
+}
+
+function PermissionRow({
+  title,
+  description,
+  icon,
+  enabled,
+  onToggle,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full rounded-2xl border border-white/[0.07] bg-black/[0.06] p-3 text-left transition hover:border-white/15 hover:bg-white/[0.03]"
+    >
+      <div className="flex items-center gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${enabled ? "bg-emerald-400/10 text-emerald-300" : "bg-white/5 text-white/20"}`}>
+          {enabled ? <Check size={17} /> : icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <p className="mt-0.5 text-xs leading-5 text-white/35">{description}</p>
+        </div>
+        <span className={`relative h-7 w-12 shrink-0 rounded-full border ${enabled ? "border-emerald-400/25 bg-emerald-400/10" : "border-white/10 bg-white/[0.05]"}`}>
+          <span className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full transition ${enabled ? "left-[22px] bg-white" : "left-1 bg-white/25"}`} />
+        </span>
+      </div>
+    </button>
   );
 }
