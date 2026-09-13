@@ -27,8 +27,6 @@ type ServiceContextType = {
 
   takeService: (id: string) => void;
 
-  confirmTakeover: (id: string) => void;
-
   rejectTakeover: (id: string) => void;
 
   excuseService: (
@@ -84,11 +82,9 @@ export function ServiceProvider({
    *      ↓
    * taken_over
    *
-   * Die Übernahme wird automatisch bestätigt.
-   *
-   * Der Dienst erscheint anschließend weiterhin
-   * bei den Anfragen der Leitung, damit die Leitung
-   * die Übernahme bei Bedarf ablehnen kann.
+   * Die Übernahme wird automatisch wirksam.
+   * Eine zusätzliche Bestätigung durch die Leitung
+   * ist nicht vorgesehen.
    */
 
   const takeService = (id: string) => {
@@ -108,34 +104,6 @@ export function ServiceProvider({
 
   /*
    * ============================================================
-   * ÜBERNAHME BESTÄTIGEN
-   * ============================================================
-   *
-   * Diese Funktion bleibt vorerst im Context,
-   * damit bestehende Komponenten nicht unnötig
-   * umgebaut werden müssen.
-   *
-   * Der normale Ablauf verwendet sie nicht mehr,
-   * da Übernahmen bereits automatisch bestätigt werden.
-   */
-
-  const confirmTakeover = (id: string) => {
-    setServices((current) =>
-      current.map((service) =>
-        service.id === id &&
-        service.status === "taken_over" &&
-        service.takenBy
-          ? {
-              ...service,
-              status: "taken_over",
-            }
-          : service
-      )
-    );
-  };
-
-  /*
-   * ============================================================
    * ÜBERNAHME ABLEHNEN
    * ============================================================
    *
@@ -143,10 +111,8 @@ export function ServiceProvider({
    *      ↓
    * exchange_requested
    *
-   * Die automatische Übernahme wird dadurch
-   * von der Leitung zurückgewiesen.
-   *
-   * Anschließend steht der Dienst wieder
+   * Die Leitung kann eine bereits automatisch wirksame
+   * Übernahme ablehnen. Danach steht der Dienst wieder
    * für andere Messdiener zur Verfügung.
    */
 
@@ -267,7 +233,6 @@ export function ServiceProvider({
       getCompletedPoints,
       requestExchange,
       takeService,
-      confirmTakeover,
       rejectTakeover,
       excuseService,
       restoreService,
