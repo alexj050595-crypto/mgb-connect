@@ -29,14 +29,14 @@ export const roles: Record<UserRole, RoleDefinition> = {
     id: "planschreiber",
     label: "Planschreiber",
     description:
-      "Leitung mit Berechtigung zur Planverwaltung und Bestätigung von Anfragen.",
+      "Leitung mit Berechtigung zur Planverwaltung und Bearbeitung von Übernahmen.",
   },
 
   admin: {
     id: "admin",
     label: "Administrator",
     description:
-      "Vollzugriff auf Verwaltung, Rollen, Pläne und Anfragen.",
+      "Vollzugriff auf Verwaltung, Rollen, Pläne, Ankündigungen und Übernahmen.",
   },
 };
 
@@ -59,13 +59,16 @@ export type Permission =
 export const permissions: Record<UserRole, Permission[]> = {
   messdiener: [],
 
+  /*
+   * Leiter dürfen alle normalen Leitungsübersichten nutzen.
+   * Übernahmen ablehnen/bearbeiten und den Messdienerplan
+   * verwalten dürfen ausschließlich Planschreiber + Admin.
+   */
   leiter: [
     "view_leader_area",
     "view_team",
     "view_service_management",
     "view_statistics",
-    "confirm_requests",
-    "manage_schedule",
   ],
 
   planschreiber: [
