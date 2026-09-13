@@ -3,6 +3,8 @@ import "./globals.css";
 
 import { ServiceProvider } from "@/context/ServiceContext";
 import { RoleProvider } from "@/context/RoleContext";
+import { AnnouncementProvider } from "@/context/AnnouncementContext";
+
 
 export const metadata: Metadata = {
   title: "MGB Connect",
@@ -20,7 +22,9 @@ export default function RootLayout({
       <body>
         <RoleProvider>
           <ServiceProvider>
-            {children}
+            <AnnouncementProvider>
+              {children}
+            </AnnouncementProvider>
           </ServiceProvider>
         </RoleProvider>
       </body>

@@ -58,6 +58,19 @@ export const navigationItems: NavigationItem[] = [
   },
 
   {
+    href: "/news",
+    icon: Megaphone,
+    title: "News",
+    description: "Aktuelle Informationen und Ankündigungen",
+    roles: [
+      "messdiener",
+      "leiter",
+      "planschreiber",
+      "admin",
+       ],
+  },
+
+  {
     href: "/services",
     icon: CalendarDays,
     title: "Meine Dienste",

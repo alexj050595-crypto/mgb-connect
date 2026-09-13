@@ -59,6 +59,13 @@ export const navigationItems: NavigationItem[] = [
   },
 
   {
+    href: "/news",
+    icon: Megaphone,
+    title: "News",
+    roles: ["messdiener", "leiter", "planschreiber", "admin"],
+  },
+
+  {
     href: "/services",
     icon: CalendarDays,
     title: "Meine Dienste",
@@ -155,7 +162,7 @@ export const navigationItems: NavigationItem[] = [
     title: "Statistiken",
     description:
       "Punkte und Dienste auswerten",
-    permission: "view_leader_area",
+    permission: "view_statistics",
   },
 
   /* ============================================================

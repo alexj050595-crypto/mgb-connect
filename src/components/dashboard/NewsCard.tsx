@@ -5,21 +5,51 @@ import {
   Bell,
   ArrowRight,
   CalendarDays,
+  Info,
+  Megaphone,
+  PartyPopper,
+  TriangleAlert,
 } from "lucide-react";
 
+import { useAnnouncements } from "@/context/AnnouncementContext";
+
+const categoryConfig = {
+  general: {
+    label: "Allgemein",
+    icon: Info,
+  },
+  service: {
+    label: "Dienst",
+    icon: Megaphone,
+  },
+  event: {
+    label: "Veranstaltung",
+    icon: PartyPopper,
+  },
+  important: {
+    label: "Wichtig",
+    icon: TriangleAlert,
+  },
+} as const;
+
+function formatDate(dateString: string) {
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(dateString));
+}
+
 export default function NewsCard() {
-  /*
-   * Vorläufige News-Daten.
-   *
-   * Sobald wir die News-Seite aufbauen, verschieben wir
-   * diese Daten in eine zentrale data/news.ts.
-   */
-  const latestNews = {
-    title: "Neue Informationen für die Messdiener",
-    date: "Diese Woche",
-    description:
-      "Hier findest du aktuelle Informationen und wichtige Hinweise der Leitung.",
-  };
+  const { activeAnnouncements } = useAnnouncements();
+
+  const latestNews = [...activeAnnouncements]
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime(),
+    )
+    .slice(0, 2);
 
   return (
     <Link
@@ -79,33 +109,83 @@ export default function NewsCard() {
       </div>
 
       {/* =========================================================
-          AKTUELLE NEWS
+          NEWS
       ========================================================= */}
 
-      <div className="mt-7">
-        <div
-          className="
-            rounded-2xl
-            border
-            border-white/10
-            bg-white/[0.035]
-            p-5
-          "
-        >
-          <div className="flex items-center gap-2 text-sm text-white/40">
-            <CalendarDays size={15} />
+      <div className="mt-7 space-y-3">
+        {latestNews.length === 0 ? (
+          <div
+            className="
+              rounded-2xl
+              border
+              border-white/10
+              bg-white/[0.035]
+              p-5
+            "
+          >
+            <div className="flex items-center gap-2 text-sm text-white/40">
+              <Bell size={15} />
 
-            <span>{latestNews.date}</span>
+              <span>Keine aktuellen News</span>
+            </div>
+
+            <p className="mt-3 text-sm leading-6 text-white/40">
+              Momentan gibt es keine veröffentlichten
+              Ankündigungen.
+            </p>
           </div>
+        ) : (
+          latestNews.map((announcement) => {
+            const category =
+              categoryConfig[announcement.category];
 
-          <h3 className="mt-3 text-lg font-bold leading-7 text-white">
-            {latestNews.title}
-          </h3>
+            const CategoryIcon = category.icon;
 
-          <p className="mt-2 text-sm leading-6 text-white/50">
-            {latestNews.description}
-          </p>
-        </div>
+            return (
+              <div
+                key={announcement.id}
+                className="
+                  rounded-2xl
+                  border
+                  border-white/10
+                  bg-white/[0.035]
+                  p-4
+                  transition
+                  group-hover:border-white/15
+                "
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <CategoryIcon
+                      size={14}
+                      className="shrink-0 text-amber-300/80"
+                    />
+
+                    <span className="truncate text-xs font-medium text-amber-300/80">
+                      {category.label}
+                    </span>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-1.5 text-xs text-white/30">
+                    <CalendarDays size={13} />
+
+                    <span>
+                      {formatDate(announcement.createdAt)}
+                    </span>
+                  </div>
+                </div>
+
+                <h3 className="mt-3 line-clamp-1 text-base font-bold text-white">
+                  {announcement.title}
+                </h3>
+
+                <p className="mt-1 line-clamp-2 text-sm leading-5 text-white/45">
+                  {announcement.content}
+                </p>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* =========================================================

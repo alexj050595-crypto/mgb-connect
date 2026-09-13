@@ -86,6 +86,7 @@ export const permissions: Record<UserRole, Permission[]> = {
     "manage_schedule",
     "manage_members",
     "manage_roles",
+    "manage_announcements",
     "manage_system",
   ],
 };
