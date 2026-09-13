@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
@@ -10,6 +10,10 @@ import {
   Info,
   TriangleAlert,
 } from "lucide-react";
+
+import Background from "@/components/layout/Background";
+import Sidebar from "@/components/layout/Sidebar";
+import Topbar from "@/components/layout/Topbar";
 
 import { useAnnouncements } from "@/context/AnnouncementContext";
 
@@ -49,27 +53,101 @@ function formatDate(dateString: string) {
 }
 
 export default function NewsPage() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { activeAnnouncements } = useAnnouncements();
 
-  const sortedAnnouncements = [...activeAnnouncements].sort(
-    (a, b) =>
-      new Date(b.createdAt).getTime() -
-      new Date(a.createdAt).getTime(),
-  );
+  const sortedAnnouncements = useMemo(() => {
+    return [...activeAnnouncements].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime(),
+    );
+  }, [activeAnnouncements]);
 
   return (
-    <main className="min-h-screen px-6 py-8 lg:px-10">
-      <div className="mx-auto max-w-6xl">
-        {/* Header */}
-        <div className="mb-10">
-          <Link
-            href="/"
-            className="mb-6 inline-flex items-center gap-2 text-sm text-white/50 transition hover:text-white"
+    <main className="relative min-h-screen overflow-hidden">
+      <Background />
+
+      {/* ========================================================
+          GLOBALES TOP-OVERLAY
+      ======================================================== */}
+
+      <div
+        className="
+          pointer-events-none
+          fixed
+          inset-x-0
+          top-0
+          z-30
+          h-32
+          bg-gradient-to-b
+          from-[#050505]
+          via-[#050505]/92
+          to-transparent
+        "
+      />
+
+      {/* ========================================================
+          SIDEBAR
+      ======================================================== */}
+
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      {/* ========================================================
+          TOPBAR
+      ======================================================== */}
+
+      <Topbar
+        sidebarOpen={sidebarOpen}
+        onMenuClick={() => setSidebarOpen(true)}
+      />
+
+      {/* ========================================================
+          CONTENT
+      ======================================================== */}
+
+      <section
+        className="
+          relative
+          z-10
+          mx-auto
+          max-w-6xl
+          px-6
+          pb-12
+          pt-36
+        "
+      >
+        {/* ======================================================
+            ZURÜCK
+        ====================================================== */}
+
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="
+              inline-flex
+              items-center
+              gap-2
+              text-sm
+              text-white/50
+              transition
+              hover:text-white
+            "
           >
             <ArrowLeft className="h-4 w-4" />
-            Zurück zum Dashboard
-          </Link>
+            Zurück
+          </button>
+        </div>
 
+        {/* ======================================================
+            HEADER
+        ====================================================== */}
+
+        <div className="mb-10">
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10">
               <Megaphone className="h-7 w-7 text-amber-300" />
@@ -92,7 +170,10 @@ export default function NewsPage() {
           </div>
         </div>
 
-        {/* News */}
+        {/* ======================================================
+            NEWS
+        ====================================================== */}
+
         {sortedAnnouncements.length === 0 ? (
           <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-10 text-center backdrop-blur-xl">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
@@ -153,7 +234,7 @@ export default function NewsPage() {
             })}
           </div>
         )}
-      </div>
+      </section>
     </main>
   );
 }
