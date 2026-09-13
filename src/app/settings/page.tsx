@@ -20,6 +20,7 @@ import {
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import SmoothToggle from "@/components/ui/smooth-toggle";
 import { useRole } from "@/context/RoleContext";
 import type { UserRole } from "@/lib/permissions";
 
@@ -36,14 +37,16 @@ type ToggleRowProps = { title: string; description: string; value: boolean; onCh
 
 function ToggleRow({ title, description, value, onChange }: ToggleRowProps) {
   return (
-    <button type="button" onClick={onChange} className="flex w-full items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.05]">
+    <button
+      type="button"
+      onClick={onChange}
+      className="flex w-full items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.05]"
+    >
       <div>
         <p className="font-semibold text-white">{title}</p>
         <p className="mt-1 text-sm leading-6 text-white/45">{description}</p>
       </div>
-      <span className={`relative h-7 w-12 shrink-0 rounded-full border transition ${value ? "border-amber-400/30 bg-amber-400/20" : "border-white/10 bg-white/5"}`}>
-        <span className={`absolute top-1 h-5 w-5 rounded-full transition ${value ? "left-6 bg-amber-300" : "left-1 bg-white/30"}`} />
-      </span>
+      <SmoothToggle checked={value} onChange={onChange} label={title} />
     </button>
   );
 }
