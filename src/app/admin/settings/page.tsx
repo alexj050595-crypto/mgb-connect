@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Bell,
   CalendarDays,
-  Check,
   Coins,
   Megaphone,
   Power,
@@ -20,15 +19,16 @@ import {
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import SmoothToggle from "@/components/ui/smooth-toggle";
 import { useRole } from "@/context/RoleContext";
 import { hasPermission } from "@/lib/permissions";
 
-function Toggle({ value, onChange }: { value: boolean; onChange: () => void }) {
-  return <button type="button" onClick={onChange} aria-pressed={value} className={`relative h-7 w-12 shrink-0 rounded-full border transition ${value ? "border-amber-400/30 bg-amber-400/20" : "border-white/10 bg-white/5"}`}><span className={`absolute top-1 h-5 w-5 rounded-full transition ${value ? "left-6 bg-amber-300" : "left-1 bg-white/30"}`} /></button>;
+function Toggle({ value, onChange, label }: { value: boolean; onChange: () => void; label: string }) {
+  return <SmoothToggle checked={value} onChange={onChange} label={label} />;
 }
 
 function SettingRow({ title, description, value, onChange }: { title: string; description: string; value: boolean; onChange: () => void }) {
-  return <div className="flex items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div><p className="font-semibold text-white">{title}</p><p className="mt-1 text-sm leading-6 text-white/45">{description}</p></div><Toggle value={value} onChange={onChange} /></div>;
+  return <div className="flex items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div><p className="font-semibold text-white">{title}</p><p className="mt-1 text-sm leading-6 text-white/45">{description}</p></div><Toggle value={value} onChange={onChange} label={title} /></div>;
 }
 
 function Section({ icon, eyebrow, title, description, children }: { icon: React.ReactNode; eyebrow: string; title: string; description: string; children: React.ReactNode }) {
