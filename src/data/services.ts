@@ -24,7 +24,9 @@ export type Service = {
   meeting: string;
   points: number;
   status: ServiceStatus;
+  assignedTo?: string;
   takenBy?: string;
+  takenById?: string;
   excuseReason?: ExcuseReason;
 };
 
