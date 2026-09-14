@@ -43,23 +43,34 @@ function isValidRole(value: string | null): value is UserRole {
 }
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const { profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [role, setRoleState] = useState<UserRole>(DEFAULT_ROLE);
 
   useEffect(() => {
+    if (authLoading) return;
+
+    // An authenticated user's role always comes from the Supabase profile.
+    // The local development role must never override a real account role.
+    if (user) {
+      setRoleState(profile?.role ?? DEFAULT_ROLE);
+      return;
+    }
+
+    // Development-only role switching remains available while logged out.
     const storedRole = window.localStorage.getItem(DEV_ROLE_STORAGE_KEY);
 
     if (isValidRole(storedRole)) {
       setRoleState(storedRole);
-      return;
+    } else {
+      setRoleState(DEFAULT_ROLE);
     }
-
-    if (profile?.role) {
-      setRoleState(profile.role);
-    }
-  }, [profile]);
+  }, [authLoading, profile, user]);
 
   const setRole = (newRole: UserRole) => {
+    // Never allow the development switcher to spoof an authenticated
+    // Supabase user's real role.
+    if (user) return;
+
     setRoleState(newRole);
     window.localStorage.setItem(DEV_ROLE_STORAGE_KEY, newRole);
   };
@@ -75,7 +86,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       hasPermission: (permission: Permission) => hasPermission(role, permission),
       setRole,
     }),
-    [role]
+    [role, user?.id]
   );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
