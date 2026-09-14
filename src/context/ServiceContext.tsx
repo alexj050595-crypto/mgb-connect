@@ -39,7 +39,10 @@ type ServiceRow = {
   points: number;
   status: Service["status"];
   excuse_reason: string | null;
+  assigned_to: string | null;
   taken_by: string | null;
+  assigned_profile?: { display_name: string | null } | null;
+  taken_profile?: { display_name: string | null } | null;
 };
 
 const ServiceContext = createContext<ServiceContextType | null>(null);
@@ -56,6 +59,9 @@ function rowToService(row: ServiceRow): Service {
     }
   );
 
+  const assignedName = row.assigned_profile?.display_name ?? undefined;
+  const takenName = row.taken_profile?.display_name ?? undefined;
+
   return {
     id: row.id,
     title: row.title,
@@ -68,7 +74,9 @@ function rowToService(row: ServiceRow): Service {
     meeting: row.meeting,
     points: row.points,
     status: row.status,
-    takenBy: row.taken_by ? "Anderer Messdiener" : undefined,
+    assignedTo: row.assigned_to ?? undefined,
+    takenById: row.taken_by ?? undefined,
+    takenBy: takenName ?? (row.taken_by ? "Anderer Messdiener" : undefined),
     excuseReason:
       row.excuse_reason &&
       ["Krankheit", "Schule", "Familie", "Urlaub", "Sonstiges"].includes(
@@ -91,11 +99,7 @@ function loadLocalServices() {
   }
 }
 
-export function ServiceProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function ServiceProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
   const [services, setServices] = useState<Service[]>(initialServices);
   const [usingSupabase, setUsingSupabase] = useState(false);
@@ -111,7 +115,7 @@ export function ServiceProvider({
     const { data, error } = await supabase
       .from("services")
       .select(
-        "id, title, date_iso, time, location, meeting, points, status, excuse_reason, taken_by"
+        "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, assigned_profile:profiles!services_assigned_to_fkey(display_name), taken_profile:profiles!services_taken_by_fkey(display_name)"
       )
       .order("date_iso", { ascending: true });
 
@@ -121,8 +125,6 @@ export function ServiceProvider({
       return;
     }
 
-    // Until the demo services are seeded into Supabase, keep the existing
-    // local demo data available so the presentation UI remains usable.
     setUsingSupabase(false);
     setServices(loadLocalServices());
   }
@@ -138,7 +140,7 @@ export function ServiceProvider({
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
     } catch {
-      // LocalStorage is only a fallback for the presentation/demo mode.
+      // LocalStorage is only a fallback for presentation/demo mode.
     }
   }, [services, usingSupabase]);
 
@@ -166,8 +168,6 @@ export function ServiceProvider({
       }
     }
 
-    // Fallback for the current presentation data until the Supabase services
-    // have been seeded and assigned to real users.
     setServices((current) =>
       current.map((service) => {
         if (service.id !== id) return service;
@@ -178,6 +178,7 @@ export function ServiceProvider({
                 ...service,
                 status: "exchange_requested",
                 takenBy: undefined,
+                takenById: undefined,
                 excuseReason: undefined,
               }
             : service;
@@ -199,6 +200,7 @@ export function ServiceProvider({
                 ...service,
                 status: "exchange_requested",
                 takenBy: undefined,
+                takenById: undefined,
               }
             : service;
         }
@@ -210,6 +212,7 @@ export function ServiceProvider({
                 status: "excused",
                 excuseReason: reason,
                 takenBy: undefined,
+                takenById: undefined,
               }
             : service;
         }
@@ -219,6 +222,7 @@ export function ServiceProvider({
           status: "scheduled",
           excuseReason: undefined,
           takenBy: undefined,
+          takenById: undefined,
         };
       })
     );
@@ -241,8 +245,16 @@ export function ServiceProvider({
   const getService = (id: string) =>
     services.find((service) => service.id === id);
 
+  const getMyServices = () =>
+    user
+      ? services.filter(
+          (service) =>
+            service.assignedTo === user.id || service.takenById === user.id
+        )
+      : services;
+
   const getTotalPoints = () =>
-    services.reduce(
+    getMyServices().reduce(
       (total, service) =>
         service.status === "completed" ? total + service.points : total,
       0
