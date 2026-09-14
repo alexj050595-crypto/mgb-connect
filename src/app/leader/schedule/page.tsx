@@ -1,22 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, Clock, Search, Users } from "lucide-react";
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
 import { useRole } from "@/context/RoleContext";
-import { services } from "@/data/services";
+import { useServices } from "@/context/ServiceContext";
 
 export default function LeaderSchedulePage() {
   const { hasPermission } = useRole();
+  const { services } = useServices();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Alle");
   const canManageSchedule = hasPermission("manage_schedule");
 
-  const sortedServices = useMemo(() => [...services].sort((a, b) => new Date(a.dateISO).getTime() - new Date(b.dateISO).getTime()), []);
+  const sortedServices = useMemo(
+    () => [...services].sort((a, b) => new Date(a.dateISO).getTime() - new Date(b.dateISO).getTime()),
+    [services]
+  );
+
   const filteredServices = useMemo(() => {
     const q = search.trim().toLowerCase();
     return sortedServices.filter((service) => {
@@ -29,7 +34,13 @@ export default function LeaderSchedulePage() {
   const months = useMemo(() => {
     const names = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
     const map = new Map<string, string>();
-    filteredServices.forEach((service) => { const key = service.dateISO.slice(0, 7); if (!map.has(key)) { const [year, month] = key.split("-").map(Number); map.set(key, `${names[month - 1]} ${year}`); } });
+    filteredServices.forEach((service) => {
+      const key = service.dateISO.slice(0, 7);
+      if (!map.has(key)) {
+        const [year, month] = key.split("-").map(Number);
+        map.set(key, `${names[month - 1]} ${year}`);
+      }
+    });
     return [...map.entries()].map(([key, label]) => ({ key, label }));
   }, [filteredServices]);
 
@@ -52,4 +63,4 @@ export default function LeaderSchedulePage() {
     {!filteredServices.length && <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.045] p-10 text-center"><Search size={32} className="mx-auto text-white/20" /><h2 className="mt-4 text-xl font-bold text-white">Keine Dienste gefunden</h2><p className="mt-2 text-sm text-white/40">Passe deine Suche oder den Filter an.</p></div>}
   </section></main>;
 }
-function ScheduleStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) { return <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-5"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">{icon}</div><div><p className="text-xs text-white/35">{label}</p><p className="mt-0.5 font-semibold text-white">{value}</p></div></div></div>; }
+function ScheduleStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) { return <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-5"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">{icon}</div><div><p className="text-xs text-white/35">{label}</p><p className="mt-0.5 font-semibold text-white">{value}</p></div></div></div>; }
