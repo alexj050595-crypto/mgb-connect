@@ -3,9 +3,10 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
-  ReactNode,
+  type ReactNode,
 } from "react";
 
 import {
@@ -16,82 +17,75 @@ import {
 
 type ServiceContextType = {
   services: Service[];
-
   getService: (id: string) => Service | undefined;
-
   getTotalPoints: () => number;
-
   getCompletedPoints: () => number;
-
   requestExchange: (id: string) => void;
-
   takeService: (id: string) => void;
-
   rejectTakeover: (id: string) => void;
-
-  excuseService: (
-    id: string,
-    reason: ExcuseReason
-  ) => void;
-
+  excuseService: (id: string, reason: ExcuseReason) => void;
   restoreService: (id: string) => void;
 };
 
-const ServiceContext =
-  createContext<ServiceContextType | null>(null);
+const ServiceContext = createContext<ServiceContextType | null>(null);
+const STORAGE_KEY = "mgb-connect-services";
 
 export function ServiceProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [services, setServices] =
-    useState<Service[]>(initialServices);
+  const [services, setServices] = useState<Service[]>(initialServices);
 
-  /*
-   * ============================================================
-   * TAUSCH ANFRAGEN
-   * ============================================================
-   *
-   * scheduled
-   *      ↓
-   * exchange_requested
-   */
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+
+      if (!stored) {
+        return;
+      }
+
+      const parsed = JSON.parse(stored) as Service[];
+
+      if (Array.isArray(parsed)) {
+        setServices(parsed);
+      }
+    } catch {
+      // Falls gespeicherte Demo-Daten beschädigt sind,
+      // bleiben die ursprünglichen Demo-Daten erhalten.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(services)
+      );
+    } catch {
+      // LocalStorage ist nur eine optionale Demo-Persistenz.
+    }
+  }, [services]);
 
   const requestExchange = (id: string) => {
     setServices((current) =>
       current.map((service) =>
-        service.id === id &&
-        service.status === "scheduled"
+        service.id === id && service.status === "scheduled"
           ? {
               ...service,
               status: "exchange_requested",
               takenBy: undefined,
+              excuseReason: undefined,
             }
           : service
       )
     );
   };
 
-  /*
-   * ============================================================
-   * DIENST ÜBERNEHMEN
-   * ============================================================
-   *
-   * exchange_requested
-   *      ↓
-   * taken_over
-   *
-   * Die Übernahme wird automatisch wirksam.
-   * Eine zusätzliche Bestätigung durch die Leitung
-   * ist nicht vorgesehen.
-   */
-
   const takeService = (id: string) => {
     setServices((current) =>
       current.map((service) =>
-        service.id === id &&
-        service.status === "exchange_requested"
+        service.id === id && service.status === "exchange_requested"
           ? {
               ...service,
               status: "taken_over",
@@ -102,25 +96,10 @@ export function ServiceProvider({
     );
   };
 
-  /*
-   * ============================================================
-   * ÜBERNAHME ABLEHNEN
-   * ============================================================
-   *
-   * taken_over
-   *      ↓
-   * exchange_requested
-   *
-   * Die Leitung kann eine bereits automatisch wirksame
-   * Übernahme ablehnen. Danach steht der Dienst wieder
-   * für andere Messdiener zur Verfügung.
-   */
-
   const rejectTakeover = (id: string) => {
     setServices((current) =>
       current.map((service) =>
-        service.id === id &&
-        service.status === "taken_over"
+        service.id === id && service.status === "taken_over"
           ? {
               ...service,
               status: "exchange_requested",
@@ -131,24 +110,10 @@ export function ServiceProvider({
     );
   };
 
-  /*
-   * ============================================================
-   * DIENST ABMELDEN
-   * ============================================================
-   *
-   * scheduled
-   *      ↓
-   * excused
-   */
-
-  const excuseService = (
-    id: string,
-    reason: ExcuseReason
-  ) => {
+  const excuseService = (id: string, reason: ExcuseReason) => {
     setServices((current) =>
       current.map((service) =>
-        service.id === id &&
-        service.status === "scheduled"
+        service.id === id && service.status === "scheduled"
           ? {
               ...service,
               status: "excused",
@@ -159,12 +124,6 @@ export function ServiceProvider({
       )
     );
   };
-
-  /*
-   * ============================================================
-   * DIENST ZURÜCKSETZEN
-   * ============================================================
-   */
 
   const restoreService = (id: string) => {
     setServices((current) =>
@@ -181,47 +140,23 @@ export function ServiceProvider({
     );
   };
 
-  /*
-   * ============================================================
-   * DIENST ABRUFEN
-   * ============================================================
-   */
-
   const getService = (id: string) => {
-    return services.find(
-      (service) => service.id === id
-    );
+    return services.find((service) => service.id === id);
   };
-
-  /*
-   * ============================================================
-   * GESAMTE PUNKTE
-   * ============================================================
-   */
 
   const getTotalPoints = () => {
     return services.reduce((total, service) => {
-      if (service.status !== "completed") {
-        return total;
-      }
-
-      return total + service.points;
+      return service.status === "completed"
+        ? total + service.points
+        : total;
     }, 0);
   };
 
-  /*
-   * ============================================================
-   * ABGESCHLOSSENE PUNKTE
-   * ============================================================
-   */
-
   const getCompletedPoints = () => {
     return services.reduce((total, service) => {
-      if (service.status !== "completed") {
-        return total;
-      }
-
-      return total + service.points;
+      return service.status === "completed"
+        ? total + service.points
+        : total;
     }, 0);
   };
 
