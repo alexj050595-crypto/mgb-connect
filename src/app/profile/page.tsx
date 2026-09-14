@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   CalendarDays,
   CheckCircle2,
+  Settings,
   Trophy,
   User,
 } from "lucide-react";
@@ -35,6 +37,14 @@ export default function ProfilePage() {
       0
     );
   }, [completedServices]);
+
+  const upcomingServices = useMemo(() => {
+    return services.filter(
+      (service) =>
+        service.status !== "completed" &&
+        service.status !== "excused"
+    ).length;
+  }, [services]);
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -92,8 +102,6 @@ export default function ProfilePage() {
           Zurück zum Dashboard
         </Link>
 
-        {/* HEADER */}
-
         <div className="mb-10">
           <p
             className="
@@ -123,8 +131,6 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        {/* PROFILKARTE */}
-
         <div
           className="
             rounded-[30px]
@@ -135,40 +141,68 @@ export default function ProfilePage() {
             backdrop-blur-2xl
           "
         >
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
-            <div
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-5">
+              <div
+                className="
+                  flex
+                  h-20
+                  w-20
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-[24px]
+                  border
+                  border-amber-400/20
+                  bg-amber-400/10
+                  text-amber-300
+                "
+              >
+                <User size={34} />
+              </div>
+
+              <div>
+                <p className="text-sm uppercase tracking-[0.16em] text-white/35">
+                  Angemeldet als
+                </p>
+                <h2 className="mt-1 text-3xl font-black text-white">
+                  Tim Mustermann
+                </h2>
+                <p className="mt-2 text-white/50">
+                  {roleLabel}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/settings"
               className="
-                flex
-                h-20
-                w-20
-                shrink-0
+                inline-flex
                 items-center
                 justify-center
-                rounded-[24px]
+                gap-2
+                rounded-2xl
                 border
-                border-amber-400/20
-                bg-amber-400/10
-                text-amber-300
+                border-white/10
+                bg-white/[0.04]
+                px-5
+                py-3
+                text-sm
+                font-semibold
+                text-white/70
+                transition
+                hover:border-amber-400/20
+                hover:bg-amber-400/10
+                hover:text-amber-200
               "
             >
-              <User size={34} />
-            </div>
-
-            <div>
-              <h2 className="text-3xl font-black text-white">
-                Mein Account
-              </h2>
-
-              <p className="mt-2 text-white/50">
-                {roleLabel}
-              </p>
-            </div>
+              <Settings size={17} />
+              Einstellungen
+            </Link>
           </div>
         </div>
 
-        {/* STATISTIK */}
-
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-4">
           <ProfileStat
             icon={<Trophy size={20} />}
             value={totalPoints}
@@ -178,7 +212,13 @@ export default function ProfilePage() {
           <ProfileStat
             icon={<CheckCircle2 size={20} />}
             value={completedServices.length}
-            label="Abgeschlossene Dienste"
+            label="Abgeschlossen"
+          />
+
+          <ProfileStat
+            icon={<CalendarDays size={20} />}
+            value={upcomingServices}
+            label="Kommend"
           />
 
           <ProfileStat
@@ -187,8 +227,6 @@ export default function ProfilePage() {
             label="Dienste insgesamt"
           />
         </div>
-
-        {/* ACCOUNTINFORMATIONEN */}
 
         <div
           className="
@@ -209,27 +247,33 @@ export default function ProfilePage() {
               text-white/40
             "
           >
-            Account
+            Persönliche Übersicht
           </p>
 
           <h2 className="mt-2 text-2xl font-bold text-white">
-            Accountinformationen
+            Deine Aktivitäten
           </h2>
 
-          <p className="mt-3 max-w-2xl leading-7 text-white/55">
-            Weitere persönliche Informationen und
-            Kontoeinstellungen werden später mit der
-            Benutzerverwaltung und Supabase verbunden.
-          </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <ProfileAction
+              href="/services"
+              title="Meine Dienste"
+              description="Kommende und vergangene Dienste verwalten"
+              icon={<CalendarDays size={20} />}
+            />
+
+            <ProfileAction
+              href="/points"
+              title="Punkte ansehen"
+              description="Punktestand, Historie und Rangliste öffnen"
+              icon={<Trophy size={20} />}
+            />
+          </div>
         </div>
       </section>
     </main>
   );
 }
-
-/* ===============================================================
-   PROFIL STATISTIK
-=============================================================== */
 
 function ProfileStat({
   icon,
@@ -253,7 +297,6 @@ function ProfileStat({
     >
       <div className="flex items-center gap-2 text-amber-300">
         {icon}
-
         <span className="text-sm text-white/45">
           {label}
         </span>
@@ -263,5 +306,72 @@ function ProfileStat({
         {value}
       </p>
     </div>
+  );
+}
+
+function ProfileAction({
+  href,
+  title,
+  description,
+  icon,
+}: {
+  href: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="
+        group
+        flex
+        items-center
+        justify-between
+        gap-4
+        rounded-2xl
+        border
+        border-white/10
+        bg-white/[0.03]
+        p-5
+        transition
+        hover:border-amber-400/20
+        hover:bg-amber-400/[0.06]
+      "
+    >
+      <div className="flex items-center gap-4">
+        <div
+          className="
+            flex
+            h-11
+            w-11
+            shrink-0
+            items-center
+            justify-center
+            rounded-xl
+            border
+            border-amber-400/15
+            bg-amber-400/10
+            text-amber-300
+          "
+        >
+          {icon}
+        </div>
+
+        <div>
+          <p className="font-semibold text-white">
+            {title}
+          </p>
+          <p className="mt-1 text-sm text-white/45">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      <ArrowRight
+        size={18}
+        className="shrink-0 text-white/25 transition group-hover:translate-x-1 group-hover:text-amber-300"
+      />
+    </Link>
   );
 }
