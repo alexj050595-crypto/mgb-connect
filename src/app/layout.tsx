@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import { AuthProvider } from "@/context/AuthContext";
 import { ServiceProvider } from "@/context/ServiceContext";
 import { RoleProvider } from "@/context/RoleContext";
 import { AnnouncementProvider } from "@/context/AnnouncementContext";
-
 
 export const metadata: Metadata = {
   title: "MGB Connect",
@@ -20,13 +20,15 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body>
-        <RoleProvider>
-          <ServiceProvider>
-            <AnnouncementProvider>
-              {children}
-            </AnnouncementProvider>
-          </ServiceProvider>
-        </RoleProvider>
+        <AuthProvider>
+          <RoleProvider>
+            <ServiceProvider>
+              <AnnouncementProvider>
+                {children}
+              </AnnouncementProvider>
+            </ServiceProvider>
+          </RoleProvider>
+        </AuthProvider>
       </body>
     </html>
   );
