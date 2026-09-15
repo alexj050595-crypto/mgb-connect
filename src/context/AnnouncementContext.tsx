@@ -74,7 +74,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
           if (Array.isArray(parsed)) setAnnouncements(parsed);
         }
       } catch {
-        // Keep fallback data.
+        // Keep the local fallback while signed out.
       }
       setLoading(false);
       return;
@@ -87,18 +87,12 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
       .order("created_at", { ascending: false });
 
     if (!error && data) {
+      // The database is authoritative for authenticated users, including when
+      // there are currently zero announcements.
       setAnnouncements(data.map(mapDatabaseAnnouncement));
     } else {
-      // Keep the local demo data if the database is not reachable yet.
-      try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as Announcement[];
-          if (Array.isArray(parsed)) setAnnouncements(parsed);
-        }
-      } catch {
-        // Keep current state.
-      }
+      // Never display demo/local announcements to an authenticated user.
+      setAnnouncements([]);
     }
 
     setLoading(false);
@@ -152,7 +146,13 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
       .eq("id", id);
 
     if (!error) {
-      setAnnouncements((items) => items.map((announcement) => announcement.id === id ? { ...announcement, active: !announcement.active } : announcement));
+      setAnnouncements((items) =>
+        items.map((announcement) =>
+          announcement.id === id
+            ? { ...announcement, active: !announcement.active }
+            : announcement
+        )
+      );
     }
   };
 
@@ -161,21 +161,39 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
 
     const supabase = createClient();
     const { error } = await supabase.from("announcements").delete().eq("id", id);
-    if (!error) setAnnouncements((items) => items.filter((announcement) => announcement.id !== id));
+    if (!error) {
+      setAnnouncements((items) => items.filter((announcement) => announcement.id !== id));
+    }
   };
 
-  const activeAnnouncements = useMemo(() => announcements.filter((announcement) => announcement.active), [announcements]);
+  const activeAnnouncements = useMemo(
+    () => announcements.filter((announcement) => announcement.active),
+    [announcements]
+  );
 
   const value = useMemo(
-    () => ({ announcements, activeAnnouncements, loading, createAnnouncement, toggleAnnouncement, deleteAnnouncement }),
+    () => ({
+      announcements,
+      activeAnnouncements,
+      loading,
+      createAnnouncement,
+      toggleAnnouncement,
+      deleteAnnouncement,
+    }),
     [announcements, activeAnnouncements, loading]
   );
 
-  return <AnnouncementContext.Provider value={value}>{children}</AnnouncementContext.Provider>;
+  return (
+    <AnnouncementContext.Provider value={value}>
+      {children}
+    </AnnouncementContext.Provider>
+  );
 }
 
 export function useAnnouncements() {
   const context = useContext(AnnouncementContext);
-  if (!context) throw new Error("useAnnouncements must be used inside an AnnouncementProvider");
+  if (!context) {
+    throw new Error("useAnnouncements must be used inside an AnnouncementProvider");
+  }
   return context;
 }
