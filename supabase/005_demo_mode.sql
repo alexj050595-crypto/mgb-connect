@@ -13,16 +13,11 @@ alter table public.system_settings enable row level security;
 drop policy if exists "system_settings_admin_select" on public.system_settings;
 drop policy if exists "system_settings_admin_write" on public.system_settings;
 
-create policy "system_settings_admin_select"
-on public.system_settings for select
-to authenticated
-using (public.is_admin());
+create policy "system_settings_admin_select" on public.system_settings for select
+to authenticated using (public.is_admin());
 
-create policy "system_settings_admin_write"
-on public.system_settings for all
-to authenticated
-using (public.is_admin())
-with check (public.is_admin());
+create policy "system_settings_admin_write" on public.system_settings for all
+to authenticated using (public.is_admin()) with check (public.is_admin());
 
 insert into public.system_settings(key, value)
 values
@@ -31,6 +26,14 @@ values
   ('service_rules', '{"autoTakeover":true,"leaderReject":true,"points":true}'::jsonb),
   ('notifications', '{"serviceReminder":true,"exchange":true,"news":true,"important":true}'::jsonb)
 on conflict (key) do nothing;
+
+create or replace function public.is_demo_mode()
+returns boolean language sql stable security definer set search_path = public
+as $$
+  select coalesce((select (value #>> '{}')::boolean from public.system_settings where key = 'demo_mode'), false);
+$$;
+
+grant execute on function public.is_demo_mode() to authenticated;
 
 create table if not exists public.demo_services (
   id uuid primary key default gen_random_uuid(),
@@ -56,53 +59,29 @@ drop policy if exists "demo_services_planner_insert" on public.demo_services;
 drop policy if exists "demo_services_planner_update" on public.demo_services;
 drop policy if exists "demo_services_planner_delete" on public.demo_services;
 
-create policy "demo_services_authenticated_select"
-on public.demo_services for select
-to authenticated
-using (public.is_demo_mode());
+create policy "demo_services_authenticated_select" on public.demo_services for select
+to authenticated using (public.is_demo_mode());
 
-create policy "demo_services_planner_insert"
-on public.demo_services for insert
-to authenticated
-with check (public.is_admin_or_planner() and public.is_demo_mode());
+create policy "demo_services_planner_insert" on public.demo_services for insert
+to authenticated with check (public.is_admin_or_planner() and public.is_demo_mode());
 
-create policy "demo_services_planner_update"
-on public.demo_services for update
+create policy "demo_services_planner_update" on public.demo_services for update
 to authenticated
 using (public.is_admin_or_planner() and public.is_demo_mode())
 with check (public.is_admin_or_planner() and public.is_demo_mode());
 
-create policy "demo_services_planner_delete"
-on public.demo_services for delete
-to authenticated
-using (public.is_admin_or_planner() and public.is_demo_mode());
-
-create or replace function public.is_demo_mode()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select coalesce((select (value #>> '{}')::boolean from public.system_settings where key = 'demo_mode'), false);
-$$;
-
-grant execute on function public.is_demo_mode() to authenticated;
+create policy "demo_services_planner_delete" on public.demo_services for delete
+to authenticated using (public.is_admin_or_planner() and public.is_demo_mode());
 
 create or replace function public.reset_demo_data()
-returns void
-language plpgsql
-security definer
-set search_path = public
+returns void language plpgsql security definer set search_path = public
 as $$
 declare
   p record;
   base_date date := current_date;
   idx integer := 0;
 begin
-  if not public.is_admin() then
-    raise exception 'Nur Administratoren dürfen den Demo-Modus verwalten';
-  end if;
+  if not public.is_admin() then raise exception 'Nur Administratoren dürfen den Demo-Modus verwalten'; end if;
 
   delete from public.demo_services;
 
@@ -111,8 +90,10 @@ begin
     insert into public.demo_services
       (title, date_iso, time, location, meeting, points, status, assigned_to)
     values
-      ('Demo-Dienst ' || idx, base_date + idx, case when idx % 2 = 0 then '18:00' else '10:00' end,
-       'Demo-Ort', 'Treffen 30 Minuten vorher', case when idx % 3 = 0 then 15 else 10 end,
+      ('Demo-Dienst ' || idx, base_date + idx,
+       case when idx % 2 = 0 then '18:00' else '10:00' end,
+       'Demo-Ort', 'Treffen 30 Minuten vorher',
+       case when idx % 3 = 0 then 15 else 10 end,
        case when idx = 1 then 'completed'::public.service_status else 'scheduled'::public.service_status end,
        p.id);
   end loop;
@@ -127,15 +108,10 @@ $$;
 grant execute on function public.reset_demo_data() to authenticated;
 
 create or replace function public.set_demo_mode(p_enabled boolean)
-returns boolean
-language plpgsql
-security definer
-set search_path = public
+returns boolean language plpgsql security definer set search_path = public
 as $$
 begin
-  if not public.is_admin() then
-    return false;
-  end if;
+  if not public.is_admin() then return false; end if;
 
   if p_enabled then
     perform public.reset_demo_data();
@@ -146,9 +122,7 @@ begin
   insert into public.system_settings(key, value, updated_at, updated_by)
   values ('demo_mode', to_jsonb(p_enabled), now(), auth.uid())
   on conflict (key) do update
-    set value = excluded.value,
-        updated_at = excluded.updated_at,
-        updated_by = excluded.updated_by;
+    set value = excluded.value, updated_at = excluded.updated_at, updated_by = excluded.updated_by;
 
   return true;
 end;
@@ -156,15 +130,14 @@ $$;
 
 grant execute on function public.set_demo_mode(boolean) to authenticated;
 
--- CRUD for production services
+-- Production service CRUD
 create or replace function public.create_service(
   p_title text, p_date_iso date, p_time text, p_location text default '',
   p_meeting text default '', p_points integer default 0,
   p_leader_id uuid default null, p_assigned_to uuid default null,
   p_status public.service_status default 'scheduled'
 )
-returns uuid
-language plpgsql security definer set search_path = public
+returns uuid language plpgsql security definer set search_path = public
 as $$
 declare v_id uuid;
 begin
@@ -183,12 +156,13 @@ create or replace function public.update_service(
   p_meeting text, p_points integer, p_leader_id uuid, p_assigned_to uuid,
   p_status public.service_status
 )
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_admin_or_planner() then raise exception 'Keine Berechtigung'; end if;
-  update public.services set title=p_title,date_iso=p_date_iso,time=p_time,location=p_location,meeting=p_meeting,
-    points=p_points,leader_id=p_leader_id,assigned_to=p_assigned_to,status=p_status,updated_at=now()
-  where id=p_service_id;
+  update public.services set title=p_title,date_iso=p_date_iso,time=p_time,location=p_location,
+    meeting=p_meeting,points=p_points,leader_id=p_leader_id,assigned_to=p_assigned_to,
+    status=p_status,updated_at=now() where id=p_service_id;
   return found;
 end;
 $$;
@@ -196,7 +170,8 @@ $$;
 grant execute on function public.update_service(uuid,text,date,text,text,text,integer,uuid,uuid,public.service_status) to authenticated;
 
 create or replace function public.delete_service(p_service_id uuid)
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_admin_or_planner() then raise exception 'Keine Berechtigung'; end if;
   delete from public.services where id=p_service_id;
@@ -206,14 +181,15 @@ $$;
 
 grant execute on function public.delete_service(uuid) to authenticated;
 
--- Demo CRUD
+-- Demo service CRUD
 create or replace function public.create_demo_service(
   p_title text, p_date_iso date, p_time text, p_location text default '',
   p_meeting text default '', p_points integer default 0,
   p_leader_id uuid default null, p_assigned_to uuid default null,
   p_status public.service_status default 'scheduled'
 )
-returns uuid language plpgsql security definer set search_path = public as $$
+returns uuid language plpgsql security definer set search_path = public
+as $$
 declare v_id uuid;
 begin
   if not public.is_admin_or_planner() or not public.is_demo_mode() then raise exception 'Keine Berechtigung oder Demo-Modus inaktiv'; end if;
@@ -231,12 +207,13 @@ create or replace function public.update_demo_service(
   p_meeting text, p_points integer, p_leader_id uuid, p_assigned_to uuid,
   p_status public.service_status
 )
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_admin_or_planner() or not public.is_demo_mode() then raise exception 'Keine Berechtigung oder Demo-Modus inaktiv'; end if;
-  update public.demo_services set title=p_title,date_iso=p_date_iso,time=p_time,location=p_location,meeting=p_meeting,
-    points=p_points,leader_id=p_leader_id,assigned_to=p_assigned_to,status=p_status,updated_at=now()
-  where id=p_service_id;
+  update public.demo_services set title=p_title,date_iso=p_date_iso,time=p_time,location=p_location,
+    meeting=p_meeting,points=p_points,leader_id=p_leader_id,assigned_to=p_assigned_to,
+    status=p_status,updated_at=now() where id=p_service_id;
   return found;
 end;
 $$;
@@ -244,7 +221,8 @@ $$;
 grant execute on function public.update_demo_service(uuid,text,date,text,text,text,integer,uuid,uuid,public.service_status) to authenticated;
 
 create or replace function public.delete_demo_service(p_service_id uuid)
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_admin_or_planner() or not public.is_demo_mode() then raise exception 'Keine Berechtigung oder Demo-Modus inaktiv'; end if;
   delete from public.demo_services where id=p_service_id;
@@ -254,10 +232,10 @@ $$;
 
 grant execute on function public.delete_demo_service(uuid) to authenticated;
 
--- Keep the demo table's leader/profile display joins possible through the same FK names.
--- Existing service transition RPCs are mirrored below with demo-table equivalents.
+-- Demo service lifecycle mirrors production behavior.
 create or replace function public.demo_request_service_exchange(p_service_id uuid)
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_demo_mode() then return false; end if;
   update public.demo_services set status='exchange_requested', taken_by=null, excuse_reason=null, updated_at=now()
@@ -269,7 +247,8 @@ $$;
 grant execute on function public.demo_request_service_exchange(uuid) to authenticated;
 
 create or replace function public.demo_take_service(p_service_id uuid)
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_demo_mode() then return false; end if;
   update public.demo_services set status='taken_over', taken_by=auth.uid(), updated_at=now()
@@ -281,7 +260,8 @@ $$;
 grant execute on function public.demo_take_service(uuid) to authenticated;
 
 create or replace function public.demo_reject_service_takeover(p_service_id uuid)
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_demo_mode() or not public.is_leader_or_admin() then return false; end if;
   update public.demo_services set status='exchange_requested', taken_by=null, updated_at=now()
@@ -293,7 +273,8 @@ $$;
 grant execute on function public.demo_reject_service_takeover(uuid) to authenticated;
 
 create or replace function public.demo_excuse_service(p_service_id uuid, p_reason text)
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_demo_mode() then return false; end if;
   update public.demo_services set status='excused', excuse_reason=p_reason, taken_by=null, updated_at=now()
@@ -305,7 +286,8 @@ $$;
 grant execute on function public.demo_excuse_service(uuid,text) to authenticated;
 
 create or replace function public.demo_restore_service(p_service_id uuid)
-returns boolean language plpgsql security definer set search_path = public as $$
+returns boolean language plpgsql security definer set search_path = public
+as $$
 begin
   if not public.is_demo_mode() then return false; end if;
   update public.demo_services set status='scheduled', excuse_reason=null, taken_by=null, updated_at=now()
