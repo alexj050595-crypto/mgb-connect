@@ -126,8 +126,7 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Authenticated users must never fall back to demo services. An empty or
-    // temporarily unavailable database should result in an empty real-data view.
+    // Authenticated users must never see demo services when Supabase fails.
     setUsingSupabase(true);
     setServices([]);
   }
@@ -165,8 +164,9 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.rpc(rpcName, params);
       if (!error && data === true) {
         await loadServices();
-        return;
       }
+      // Never mutate client-side demo state for an authenticated user.
+      return;
     }
 
     setServices((current) =>
