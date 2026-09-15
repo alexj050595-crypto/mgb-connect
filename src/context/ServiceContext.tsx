@@ -16,6 +16,7 @@ import {
 } from "@/data/services";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 
 type ServiceContextType = {
   services: Service[];
@@ -51,7 +52,7 @@ type ServiceRow = {
 const ServiceContext = createContext<ServiceContextType | null>(null);
 const STORAGE_KEY = "mgb-connect-services";
 
-function rowToService(row: ServiceRow): Service {
+function rowToService(row: ServiceRow, userId?: string): Service {
   const date = new Date(`${row.date_iso}T12:00:00`).toLocaleDateString(
     "de-DE",
     {
@@ -61,6 +62,9 @@ function rowToService(row: ServiceRow): Service {
       year: "numeric",
     }
   );
+
+  const assignedName = row.assigned_profile?.display_name ??
+    (row.assigned_to && row.assigned_to === userId ? "Du" : "");
 
   return {
     id: row.id,
@@ -86,7 +90,8 @@ function rowToService(row: ServiceRow): Service {
       )
         ? (row.excuse_reason as ExcuseReason)
         : undefined,
-  };
+    ...(assignedName ? { assignedName } : {}),
+  } as Service;
 }
 
 function loadLocalServices() {
@@ -102,7 +107,8 @@ function loadLocalServices() {
 
 export function ServiceProvider({ children }: { children: ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const [services, setServices] = useState<Service[]>(initialServices);
+  const { enabled: demoMode, loading: demoLoading } = useDemoMode();
+  const [services, setServices] = useState<Service[]>([]);
   const [usingSupabase, setUsingSupabase] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
@@ -113,28 +119,30 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const table = demoMode ? "demo_services" : "services";
+    const select = demoMode
+      ? "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, leader_id"
+      : "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, leader_id, assigned_profile:profiles!services_assigned_to_fkey(display_name), taken_profile:profiles!services_taken_by_fkey(display_name), leader_profile:profiles!services_leader_id_fkey(display_name)";
+
     const { data, error } = await supabase
-      .from("services")
-      .select(
-        "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, leader_id, assigned_profile:profiles!services_assigned_to_fkey(display_name), taken_profile:profiles!services_taken_by_fkey(display_name), leader_profile:profiles!services_leader_id_fkey(display_name)"
-      )
+      .from(table)
+      .select(select)
       .order("date_iso", { ascending: true });
 
+    setUsingSupabase(true);
     if (!error && data) {
-      setServices((data as ServiceRow[]).map(rowToService));
-      setUsingSupabase(true);
+      setServices((data as ServiceRow[]).map((row) => rowToService(row, user.id)));
       return;
     }
 
-    // Authenticated users must never see demo services when Supabase fails.
-    setUsingSupabase(true);
+    // Authenticated users never fall back to local demo data.
     setServices([]);
   }
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || demoLoading) return;
     void loadServices();
-  }, [authLoading, user?.id]);
+  }, [authLoading, demoLoading, user?.id, demoMode]);
 
   useEffect(() => {
     if (usingSupabase) return;
@@ -156,135 +164,86 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
     reason?: ExcuseReason
   ) {
     if (usingSupabase && user) {
+      const realRpc = demoMode
+        ? ({
+            request_service_exchange: "demo_request_service_exchange",
+            take_service: "demo_take_service",
+            reject_service_takeover: "demo_reject_service_takeover",
+            excuse_service: "demo_excuse_service",
+            restore_service: "demo_restore_service",
+          } as const)[rpcName]
+        : rpcName;
+
       const params =
         rpcName === "excuse_service"
           ? { p_service_id: id, p_reason: reason }
           : { p_service_id: id };
 
-      const { data, error } = await supabase.rpc(rpcName, params);
-      if (!error && data === true) {
-        await loadServices();
-      }
-      // Never mutate client-side demo state for an authenticated user.
+      const { data } = await supabase.rpc(realRpc, params);
+      if (data === true) await loadServices();
       return;
     }
 
     setServices((current) =>
       current.map((service) => {
         if (service.id !== id) return service;
-
         if (rpcName === "request_service_exchange") {
           return service.status === "scheduled"
-            ? {
-                ...service,
-                status: "exchange_requested",
-                takenBy: undefined,
-                takenById: undefined,
-                excuseReason: undefined,
-              }
+            ? { ...service, status: "exchange_requested", takenBy: undefined, takenById: undefined, excuseReason: undefined }
             : service;
         }
         if (rpcName === "take_service") {
           return service.status === "exchange_requested"
-            ? {
-                ...service,
-                status: "taken_over",
-                takenBy: "Anderer Messdiener",
-              }
+            ? { ...service, status: "taken_over", takenBy: "Anderer Messdiener" }
             : service;
         }
         if (rpcName === "reject_service_takeover") {
           return service.status === "taken_over"
-            ? {
-                ...service,
-                status: "exchange_requested",
-                takenBy: undefined,
-                takenById: undefined,
-              }
+            ? { ...service, status: "exchange_requested", takenBy: undefined, takenById: undefined }
             : service;
         }
         if (rpcName === "excuse_service") {
           return service.status === "scheduled"
-            ? {
-                ...service,
-                status: "excused",
-                excuseReason: reason,
-                takenBy: undefined,
-                takenById: undefined,
-              }
+            ? { ...service, status: "excused", excuseReason: reason, takenBy: undefined, takenById: undefined }
             : service;
         }
-        return {
-          ...service,
-          status: "scheduled",
-          excuseReason: undefined,
-          takenBy: undefined,
-          takenById: undefined,
-        };
+        return { ...service, status: "scheduled", excuseReason: undefined, takenBy: undefined, takenById: undefined };
       })
     );
   }
 
-  const requestExchange = (id: string) =>
-    runTransition("request_service_exchange", id);
+  const requestExchange = (id: string) => runTransition("request_service_exchange", id);
   const takeService = (id: string) => runTransition("take_service", id);
-  const rejectTakeover = (id: string) =>
-    runTransition("reject_service_takeover", id);
-  const excuseService = (id: string, reason: ExcuseReason) =>
-    runTransition("excuse_service", id, reason);
+  const rejectTakeover = (id: string) => runTransition("reject_service_takeover", id);
+  const excuseService = (id: string, reason: ExcuseReason) => runTransition("excuse_service", id, reason);
   const restoreService = (id: string) => runTransition("restore_service", id);
 
-  const getService = (id: string) =>
-    services.find((service) => service.id === id);
+  const getService = (id: string) => services.find((service) => service.id === id);
 
   const myServices = useMemo(
-    () =>
-      user
-        ? services.filter(
-            (service) =>
-              service.assignedTo === user.id ||
-              service.takenById === user.id
-          )
-        : services,
+    () => user
+      ? services.filter((service) => service.assignedTo === user.id || service.takenById === user.id)
+      : services,
     [services, user?.id]
   );
 
-  const getTotalPoints = () =>
-    myServices.reduce(
-      (total, service) =>
-        service.status === "completed" ? total + service.points : total,
-      0
-    );
+  const getTotalPoints = () => myServices.reduce(
+    (total, service) => service.status === "completed" ? total + service.points : total,
+    0
+  );
 
   const getCompletedPoints = getTotalPoints;
 
   const value = useMemo(
-    () => ({
-      services,
-      myServices,
-      getService,
-      getTotalPoints,
-      getCompletedPoints,
-      requestExchange,
-      takeService,
-      rejectTakeover,
-      excuseService,
-      restoreService,
-    }),
-    [services, myServices, usingSupabase, user?.id]
+    () => ({ services, myServices, getService, getTotalPoints, getCompletedPoints, requestExchange, takeService, rejectTakeover, excuseService, restoreService }),
+    [services, myServices, usingSupabase, user?.id, demoMode]
   );
 
-  return (
-    <ServiceContext.Provider value={value}>
-      {children}
-    </ServiceContext.Provider>
-  );
+  return <ServiceContext.Provider value={value}>{children}</ServiceContext.Provider>;
 }
 
 export function useServices() {
   const context = useContext(ServiceContext);
-  if (!context) {
-    throw new Error("useServices must be used inside a ServiceProvider");
-  }
+  if (!context) throw new Error("useServices must be used inside a ServiceProvider");
   return context;
 }
