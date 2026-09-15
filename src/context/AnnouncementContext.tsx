@@ -1,29 +1,12 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-
-import {
-  initialAnnouncements,
-  type Announcement,
-  type AnnouncementCategory,
-} from "@/data/announcements";
+import { useCallback, useContext, useEffect, useMemo, useState, createContext, type ReactNode } from "react";
+import { initialAnnouncements, type Announcement, type AnnouncementCategory } from "@/data/announcements";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 
-type CreateAnnouncementInput = {
-  title: string;
-  content: string;
-  category: AnnouncementCategory;
-};
-
+type CreateAnnouncementInput = { title: string; content: string; category: AnnouncementCategory };
 type AnnouncementContextType = {
   announcements: Announcement[];
   activeAnnouncements: Announcement[];
@@ -40,14 +23,7 @@ function isCategory(value: string): value is AnnouncementCategory {
   return value === "general" || value === "service" || value === "event" || value === "important";
 }
 
-function mapDatabaseAnnouncement(row: {
-  id: string;
-  title: string;
-  content: string;
-  priority: string;
-  published: boolean;
-  created_at: string;
-}): Announcement {
+function mapDatabaseAnnouncement(row: { id: string; title: string; content: string; priority: string; published: boolean; created_at: string }): Announcement {
   return {
     id: row.id,
     title: row.title,
@@ -60,11 +36,12 @@ function mapDatabaseAnnouncement(row: {
 
 export function AnnouncementProvider({ children }: { children: ReactNode }) {
   const { user, profile, loading: authLoading } = useAuth();
-  const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
+  const { enabled: demoMode, loading: demoLoading } = useDemoMode();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAnnouncements = useCallback(async () => {
-    if (authLoading) return;
+    if (authLoading || demoLoading) return;
 
     if (!user) {
       try {
@@ -72,43 +49,33 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
         if (stored) {
           const parsed = JSON.parse(stored) as Announcement[];
           if (Array.isArray(parsed)) setAnnouncements(parsed);
+          else setAnnouncements(initialAnnouncements);
+        } else {
+          setAnnouncements(initialAnnouncements);
         }
       } catch {
-        // Keep the local fallback while signed out.
+        setAnnouncements(initialAnnouncements);
       }
       setLoading(false);
       return;
     }
 
     const supabase = createClient();
+    const table = demoMode ? "demo_announcements" : "announcements";
     const { data, error } = await supabase
-      .from("announcements")
+      .from(table)
       .select("id, title, content, priority, published, created_at")
       .order("created_at", { ascending: false });
 
-    if (!error && data) {
-      // The database is authoritative for authenticated users, including when
-      // there are currently zero announcements.
-      setAnnouncements(data.map(mapDatabaseAnnouncement));
-    } else {
-      // Never display demo/local announcements to an authenticated user.
-      setAnnouncements([]);
-    }
-
+    setAnnouncements(!error && data ? data.map(mapDatabaseAnnouncement) : []);
     setLoading(false);
-  }, [authLoading, user]);
+  }, [authLoading, demoLoading, user, demoMode]);
 
-  useEffect(() => {
-    void loadAnnouncements();
-  }, [loadAnnouncements]);
+  useEffect(() => { void loadAnnouncements(); }, [loadAnnouncements]);
 
   useEffect(() => {
     if (!user && announcements.length) {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(announcements));
-      } catch {
-        // Optional demo persistence.
-      }
+      try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(announcements)); } catch { /* optional fallback */ }
     }
   }, [announcements, user]);
 
@@ -118,20 +85,14 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
     if (!title || !content || !user || profile?.role !== "admin") return;
 
     const supabase = createClient();
+    const table = demoMode ? "demo_announcements" : "announcements";
     const { data, error } = await supabase
-      .from("announcements")
-      .insert({
-        title,
-        content,
-        priority: input.category,
-        published: true,
-        created_by: user.id,
-      })
+      .from(table)
+      .insert({ title, content, priority: input.category, published: true, created_by: user.id })
       .select("id, title, content, priority, published, created_at")
       .single();
 
-    if (error || !data) return;
-    setAnnouncements((current) => [mapDatabaseAnnouncement(data), ...current]);
+    if (!error && data) setAnnouncements((current) => [mapDatabaseAnnouncement(data), ...current]);
   };
 
   const toggleAnnouncement = async (id: string) => {
@@ -140,60 +101,27 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
     if (!current) return;
 
     const supabase = createClient();
-    const { error } = await supabase
-      .from("announcements")
-      .update({ published: !current.active })
-      .eq("id", id);
-
-    if (!error) {
-      setAnnouncements((items) =>
-        items.map((announcement) =>
-          announcement.id === id
-            ? { ...announcement, active: !announcement.active }
-            : announcement
-        )
-      );
-    }
+    const table = demoMode ? "demo_announcements" : "announcements";
+    const { error } = await supabase.from(table).update({ published: !current.active }).eq("id", id);
+    if (!error) setAnnouncements((items) => items.map((item) => item.id === id ? { ...item, active: !item.active } : item));
   };
 
   const deleteAnnouncement = async (id: string) => {
     if (!user || profile?.role !== "admin") return;
-
     const supabase = createClient();
-    const { error } = await supabase.from("announcements").delete().eq("id", id);
-    if (!error) {
-      setAnnouncements((items) => items.filter((announcement) => announcement.id !== id));
-    }
+    const table = demoMode ? "demo_announcements" : "announcements";
+    const { error } = await supabase.from(table).delete().eq("id", id);
+    if (!error) setAnnouncements((items) => items.filter((item) => item.id !== id));
   };
 
-  const activeAnnouncements = useMemo(
-    () => announcements.filter((announcement) => announcement.active),
-    [announcements]
-  );
+  const activeAnnouncements = useMemo(() => announcements.filter((announcement) => announcement.active), [announcements]);
+  const value = useMemo(() => ({ announcements, activeAnnouncements, loading, createAnnouncement, toggleAnnouncement, deleteAnnouncement }), [announcements, activeAnnouncements, loading, demoMode]);
 
-  const value = useMemo(
-    () => ({
-      announcements,
-      activeAnnouncements,
-      loading,
-      createAnnouncement,
-      toggleAnnouncement,
-      deleteAnnouncement,
-    }),
-    [announcements, activeAnnouncements, loading]
-  );
-
-  return (
-    <AnnouncementContext.Provider value={value}>
-      {children}
-    </AnnouncementContext.Provider>
-  );
+  return <AnnouncementContext.Provider value={value}>{children}</AnnouncementContext.Provider>;
 }
 
 export function useAnnouncements() {
   const context = useContext(AnnouncementContext);
-  if (!context) {
-    throw new Error("useAnnouncements must be used inside an AnnouncementProvider");
-  }
+  if (!context) throw new Error("useAnnouncements must be used inside an AnnouncementProvider");
   return context;
 }
