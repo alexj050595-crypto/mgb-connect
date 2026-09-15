@@ -19,34 +19,19 @@ type ActionBody = {
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY ist auf dem Server nicht konfiguriert.");
-  }
-
-  return createAdminClient(url, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  if (!url || !serviceRoleKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY ist auf dem Server nicht konfiguriert.");
+  return createAdminClient(url, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
 async function requireAdmin() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, status: 401, error: "Nicht angemeldet." };
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("role, active")
-    .eq("id", user.id)
-    .maybeSingle();
-
+  const { data: profile, error } = await supabase.from("profiles").select("role, active").eq("id", user.id).maybeSingle();
   if (error || profile?.role !== "admin" || !profile.active) {
     return { ok: false as const, status: 403, error: "Nur aktive Administratoren dürfen Benutzer verwalten." };
   }
-
   return { ok: true as const, user };
 }
 
@@ -63,11 +48,7 @@ export async function GET() {
     const { data, error } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    const { data: profiles, error: profilesError } = await admin
-      .from("profiles")
-      .select("id, display_name, role, active, points")
-      .order("display_name", { ascending: true });
-
+    const { data: profiles, error: profilesError } = await admin.from("profiles").select("id, display_name, role, active, points").order("display_name", { ascending: true });
     if (profilesError) return NextResponse.json({ error: profilesError.message }, { status: 500 });
 
     const profileMap = new Map(profiles.map((profile) => [profile.id, profile]));
@@ -125,12 +106,15 @@ export async function POST(request: Request) {
 
       if (error || !data.user) return NextResponse.json({ error: error?.message ?? "Benutzer konnte nicht erstellt werden." }, { status: 400 });
 
-      const { error: profileError } = await admin
-        .from("profiles")
-        .update({ display_name: displayName || email.split("@")[0], role, active: true })
-        .eq("id", data.user.id);
+      const finalName = displayName || email.split("@")[0];
+      const { error: profileError } = await admin.from("profiles").update({ display_name: finalName, role, active: true }).eq("id", data.user.id);
 
-      if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+      if (profileError) {
+        // Do not leave an Auth account behind if the matching application profile cannot be configured.
+        await admin.auth.admin.deleteUser(data.user.id);
+        return NextResponse.json({ error: "Benutzer konnte nicht vollständig eingerichtet werden." }, { status: 500 });
+      }
+
       return NextResponse.json({ ok: true, userId: data.user.id });
     }
 
@@ -150,13 +134,18 @@ export async function POST(request: Request) {
         if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       }
 
+      // Keep Supabase Auth and the application-level active flag in sync.
+      if (typeof body.active === "boolean") {
+        const { error } = await admin.auth.admin.updateUserById(body.userId, { ban_duration: body.active ? "none" : "876000h" });
+        if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+
       return NextResponse.json({ ok: true });
     }
 
     if (body.action === "set_password") {
       const password = body.password ?? "";
       if (password.length < 8) return NextResponse.json({ error: "Das Passwort muss mindestens 8 Zeichen lang sein." }, { status: 400 });
-
       const { error } = await admin.auth.admin.updateUserById(body.userId, { password });
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ ok: true });
