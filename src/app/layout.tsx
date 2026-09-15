@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ServiceProvider } from "@/context/ServiceContext";
 import { RoleProvider } from "@/context/RoleContext";
 import { AnnouncementProvider } from "@/context/AnnouncementContext";
+import { DemoModeProvider } from "@/context/DemoModeContext";
 
 export const metadata: Metadata = {
   title: "MGB Connect",
@@ -22,11 +23,11 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <RoleProvider>
-            <ServiceProvider>
-              <AnnouncementProvider>
-                {children}
-              </AnnouncementProvider>
-            </ServiceProvider>
+            <DemoModeProvider>
+              <ServiceProvider>
+                <AnnouncementProvider>{children}</AnnouncementProvider>
+              </ServiceProvider>
+            </DemoModeProvider>
           </RoleProvider>
         </AuthProvider>
       </body>
