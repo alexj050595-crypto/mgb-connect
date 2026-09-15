@@ -17,9 +17,6 @@ import {
 } from "@/lib/permissions";
 import { useAuth } from "@/context/AuthContext";
 
-const DEV_ROLE_STORAGE_KEY = "mgb-dev-role";
-const DEFAULT_ROLE: UserRole = "messdiener";
-
 type RoleContextType = {
   role: UserRole;
   roleLabel: string;
@@ -28,52 +25,26 @@ type RoleContextType = {
   isPlanner: boolean;
   isAdmin: boolean;
   hasPermission: (permission: Permission) => boolean;
-  setRole: (role: UserRole) => void;
 };
 
 const RoleContext = createContext<RoleContextType | null>(null);
 
-function isValidRole(value: string | null): value is UserRole {
-  return (
-    value === "messdiener" ||
-    value === "leiter" ||
-    value === "planschreiber" ||
-    value === "admin"
-  );
-}
-
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, profile, loading: authLoading } = useAuth();
-  const [role, setRoleState] = useState<UserRole>(DEFAULT_ROLE);
+  const [role, setRole] = useState<UserRole>("messdiener");
 
   useEffect(() => {
     if (authLoading) return;
 
-    // An authenticated user's role always comes from the Supabase profile.
-    // The local development role must never override a real account role.
-    if (user) {
-      setRoleState(profile?.role ?? DEFAULT_ROLE);
+    // The real Supabase profile is the only source of truth for roles.
+    // Frontend role switching has intentionally been removed.
+    if (user && profile?.role) {
+      setRole(profile.role);
       return;
     }
 
-    // Development-only role switching remains available while logged out.
-    const storedRole = window.localStorage.getItem(DEV_ROLE_STORAGE_KEY);
-
-    if (isValidRole(storedRole)) {
-      setRoleState(storedRole);
-    } else {
-      setRoleState(DEFAULT_ROLE);
-    }
+    setRole("messdiener");
   }, [authLoading, profile, user]);
-
-  const setRole = (newRole: UserRole) => {
-    // Never allow the development switcher to spoof an authenticated
-    // Supabase user's real role.
-    if (user) return;
-
-    setRoleState(newRole);
-    window.localStorage.setItem(DEV_ROLE_STORAGE_KEY, newRole);
-  };
 
   const value = useMemo(
     () => ({
@@ -84,9 +55,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       isPlanner: role === "planschreiber",
       isAdmin: role === "admin",
       hasPermission: (permission: Permission) => hasPermission(role, permission),
-      setRole,
     }),
-    [role, user?.id]
+    [role]
   );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
