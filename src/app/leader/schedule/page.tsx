@@ -1,66 +1,61 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, Clock, Search, Users } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, Clock, Edit3, Plus, Search, Trash2, Users, X } from "lucide-react";
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
 import { useRole } from "@/context/RoleContext";
-import { useServices } from "@/context/ServiceContext";
+import { useServices, type ServiceFormInput } from "@/context/ServiceContext";
+import { createClient } from "@/lib/supabase/client";
+import { useDemoMode } from "@/context/DemoModeContext";
+
+const emptyForm: ServiceFormInput = { title: "", dateISO: "", time: "", location: "", leaderId: "", meeting: "", points: 10, assignedTo: "", status: "scheduled" };
+
+type Person = { id: string; display_name: string | null; role: string; active: boolean };
 
 export default function LeaderSchedulePage() {
   const { hasPermission } = useRole();
-  const { services } = useServices();
+  const { services, createService, updateService, deleteService } = useServices();
+  const { enabled: demoMode } = useDemoMode();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Alle");
+  const [people, setPeople] = useState<Person[]>([]);
+  const [form, setForm] = useState<ServiceFormInput>(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const canManageSchedule = hasPermission("manage_schedule");
 
-  const sortedServices = useMemo(
-    () => [...services].sort((a, b) => new Date(a.dateISO).getTime() - new Date(b.dateISO).getTime()),
-    [services]
-  );
+  useEffect(() => {
+    if (!canManageSchedule) return;
+    const supabase = createClient();
+    void supabase.from("profiles").select("id, display_name, role, active").eq("active", true).order("display_name").then(({ data }) => setPeople((data ?? []) as Person[]));
+  }, [canManageSchedule]);
 
-  const filteredServices = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return sortedServices.filter((service) => {
-      const matchesSearch = !q || [service.title, service.leader, service.date, service.meeting].some((value) => value.toLowerCase().includes(q));
-      const matchesFilter = filter === "Alle" || (filter === "Offen" && service.status === "exchange_requested") || (filter === "Eingeplant" && service.status === "scheduled") || (filter === "Abgeschlossen" && service.status === "completed");
-      return matchesSearch && matchesFilter;
-    });
-  }, [sortedServices, search, filter]);
+  const filtered = useMemo(() => { const q = search.trim().toLowerCase(); return [...services].sort((a,b) => a.dateISO.localeCompare(b.dateISO)).filter(s => { const text = [s.title,s.leader,s.date,s.meeting].join(" ").toLowerCase(); const f = filter === "Alle" || (filter === "Offen" && s.status === "exchange_requested") || (filter === "Eingeplant" && s.status === "scheduled") || (filter === "Abgeschlossen" && s.status === "completed") || (filter === "Abgemeldet" && s.status === "excused"); return (!q || text.includes(q)) && f; }); }, [services, search, filter]);
 
-  const months = useMemo(() => {
-    const names = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
-    const map = new Map<string, string>();
-    filteredServices.forEach((service) => {
-      const key = service.dateISO.slice(0, 7);
-      if (!map.has(key)) {
-        const [year, month] = key.split("-").map(Number);
-        map.set(key, `${names[month - 1]} ${year}`);
-      }
-    });
-    return [...map.entries()].map(([key, label]) => ({ key, label }));
-  }, [filteredServices]);
+  if (!canManageSchedule) return <main className="relative min-h-screen overflow-hidden"><Background /><section className="relative z-10 flex min-h-screen items-center justify-center px-6"><div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.045] p-8 text-center"><AlertCircle size={28} className="mx-auto text-red-300" /><h1 className="mt-5 text-2xl font-bold text-white">Kein Zugriff</h1><p className="mt-2 text-sm text-white/50">Du hast keine Berechtigung, den Messdienerplan zu verwalten.</p><Link href="/leader" className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white"><ArrowLeft size={16}/>Zum Leiterbereich</Link></div></section></main>;
 
-  const status = (value: (typeof services)[number]["status"]) => {
-    if (value === "scheduled") return ["Eingeplant", "border-emerald-400/20 bg-emerald-400/10 text-emerald-300"];
-    if (value === "exchange_requested") return ["Vertretung gesucht", "border-amber-400/20 bg-amber-400/10 text-amber-300"];
-    if (value === "taken_over") return ["Übernommen", "border-purple-400/20 bg-purple-400/10 text-purple-300"];
-    if (value === "excused") return ["Abgemeldet", "border-red-400/20 bg-red-400/10 text-red-300"];
-    return ["Abgeschlossen", "border-white/10 bg-white/5 text-white/50"];
-  };
+  const openCreate = () => { setEditingId(null); setForm({ ...emptyForm }); setShowForm(true); };
+  const openEdit = (id: string) => { const s = services.find(x => x.id === id); if (!s) return; setEditingId(id); setForm({ title:s.title, dateISO:s.dateISO, time:s.time.replace(" Uhr", ""), location:s.location, leaderId:people.find(p=>p.display_name===s.leader)?.id ?? "", meeting:s.meeting, points:s.points, assignedTo:s.assignedTo ?? "", status:s.status }); setShowForm(true); };
+  const submit = async (e: FormEvent) => { e.preventDefault(); if (!form.title.trim() || !form.dateISO || !form.time) return; setSaving(true); const ok = editingId ? await updateService(editingId, form) : await createService(form); setSaving(false); if (ok) setShowForm(false); };
+  const remove = async (id: string) => { if (!window.confirm("Diesen Dienst wirklich löschen?")) return; await deleteService(id); };
 
-  if (!canManageSchedule) return <main className="relative min-h-screen overflow-hidden"><Background /><section className="relative z-10 flex min-h-screen items-center justify-center px-6"><div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.045] p-8 text-center"><AlertCircle size={28} className="mx-auto text-red-300" /><h1 className="mt-5 text-2xl font-bold text-white">Kein Zugriff</h1><p className="mt-2 text-sm text-white/50">Du hast keine Berechtigung, den Messdienerplan zu verwalten.</p><Link href="/leader" className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white hover:bg-white/10"><ArrowLeft size={16} />Zum Leiterbereich</Link></div></section></main>;
-
-  return <main className="relative min-h-screen overflow-hidden"><Background /><div className="pointer-events-none fixed inset-x-0 top-0 z-30 h-32 bg-gradient-to-b from-[#050505] via-[#050505]/92 to-transparent" /><Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} /><Topbar sidebarOpen={sidebarOpen} onMenuClick={() => setSidebarOpen(true)} /><section className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-36">
-    <Link href="/leader" className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-amber-300"><ArrowLeft size={15} />Leiterbereich</Link>
-    <div className="mt-8"><p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Planung</p><h1 className="mt-2 text-5xl font-black tracking-tight text-white">Messdienerplan</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">Alle geplanten Dienste chronologisch auf einen Blick.</p></div>
-    <div className="mt-10 grid gap-4 sm:grid-cols-3"><ScheduleStat icon={<CalendarDays size={20} />} label="Dienste" value={String(sortedServices.length)} /><ScheduleStat icon={<Users size={20} />} label="Offene Vertretungen" value={String(sortedServices.filter((s) => s.status === "exchange_requested").length)} /><ScheduleStat icon={<CheckCircle2 size={20} />} label="Abgeschlossen" value={String(sortedServices.filter((s) => s.status === "completed").length)} /></div>
-    <div className="mt-8 rounded-[26px] border border-white/10 bg-white/[0.045] p-4 backdrop-blur-2xl"><div className="flex flex-col gap-3 md:flex-row"><div className="relative flex-1"><Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/25" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Dienst, Leiter oder Datum suchen..." className="w-full rounded-2xl border border-white/10 bg-black/10 py-3 pl-11 pr-4 text-sm text-white outline-none placeholder:text-white/25 focus:border-amber-400/25" /></div><div className="flex flex-wrap gap-2">{["Alle", "Eingeplant", "Offen", "Abgeschlossen"].map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`rounded-2xl border px-4 py-3 text-sm transition ${filter === item ? "border-amber-400/25 bg-amber-400/10 text-amber-200" : "border-white/10 bg-white/[0.03] text-white/45 hover:bg-white/[0.06]"}`}>{item}</button>)}</div></div></div>
-    <div className="mt-10 space-y-10">{months.map((month) => { const monthServices = filteredServices.filter((s) => s.dateISO.startsWith(month.key)); return <section key={month.key}><div className="mb-4 flex items-center gap-4"><h2 className="text-xl font-bold text-white">{month.label}</h2><div className="h-px flex-1 bg-white/10" /><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/40">{monthServices.length} {monthServices.length === 1 ? "Dienst" : "Dienste"}</span></div><div className="space-y-3">{monthServices.map((service) => { const [label, className] = status(service.status); return <div key={service.id} className="group rounded-2xl border border-white/10 bg-white/[0.045] p-5 transition hover:border-white/15 hover:bg-white/[0.06]"><div className="flex flex-col gap-5 lg:flex-row lg:items-center"><div className="flex shrink-0 items-center gap-4 lg:w-56"><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-400/15 bg-amber-400/10 text-amber-300"><CalendarDays size={21} /></div><div><p className="font-semibold text-white">{service.date}</p><div className="mt-1 flex items-center gap-2 text-sm text-white/45"><Clock size={14} />{service.time}</div></div></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-3"><h3 className="text-lg font-semibold text-white">{service.title}</h3><span className={`rounded-full border px-3 py-1 text-xs font-semibold ${className}`}>{label}</span></div><div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white/50"><span className="flex items-center gap-2"><Users size={15} />Leiter: {service.leader}</span><span>{service.meeting}</span></div></div><div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 lg:text-right"><p className="text-xs text-white/35">Punkte</p><p className="mt-0.5 text-lg font-bold text-amber-300">+{service.points}</p></div></div></div>; })}</div></section>; })}</div>
-    {!filteredServices.length && <div className="mt-10 rounded-3xl border border-white/10 bg-white/[0.045] p-10 text-center"><Search size={32} className="mx-auto text-white/20" /><h2 className="mt-4 text-xl font-bold text-white">Keine Dienste gefunden</h2><p className="mt-2 text-sm text-white/40">Passe deine Suche oder den Filter an.</p></div>}
-  </section></main>;
+  return <main className="relative min-h-screen overflow-hidden"><Background/><div className="pointer-events-none fixed inset-x-0 top-0 z-30 h-32 bg-gradient-to-b from-[#050505] via-[#050505]/92 to-transparent"/><Sidebar open={sidebarOpen} onClose={()=>setSidebarOpen(false)}/><Topbar sidebarOpen={sidebarOpen} onMenuClick={()=>setSidebarOpen(true)}/>
+    <section className="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-36">
+      <Link href="/leader" className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-amber-300"><ArrowLeft size={15}/>Leiterbereich</Link>
+      <div className="mt-8 flex flex-col gap-5 md:flex-row md:items-end md:justify-between"><div><p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Planung</p><h1 className="mt-2 text-5xl font-black tracking-tight text-white">Messdienerplan</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">Dienste erstellen, bearbeiten, zuweisen und verwalten.</p></div><button onClick={openCreate} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-5 py-3 text-sm font-semibold text-amber-200 hover:bg-amber-300/15"><Plus size={17}/>Dienst erstellen</button></div>
+      <div className="mt-10 grid gap-4 sm:grid-cols-3"><ScheduleStat icon={<CalendarDays size={20}/>} label="Dienste" value={String(services.length)}/><ScheduleStat icon={<Users size={20}/>} label="Offene Vertretungen" value={String(services.filter(s=>s.status==="exchange_requested").length)}/><ScheduleStat icon={<CheckCircle2 size={20}/>} label="Abgeschlossen" value={String(services.filter(s=>s.status==="completed").length)}/></div>
+      <div className="mt-8 rounded-[26px] border border-white/10 bg-white/[0.045] p-4 backdrop-blur-2xl"><div className="flex flex-col gap-3 md:flex-row"><div className="relative flex-1"><Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/25"/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Dienst, Leiter oder Datum suchen..." className="w-full rounded-2xl border border-white/10 bg-black/10 py-3 pl-11 pr-4 text-sm text-white outline-none placeholder:text-white/25 focus:border-amber-400/25"/></div><div className="flex flex-wrap gap-2">{["Alle","Eingeplant","Offen","Abgeschlossen","Abgemeldet"].map(item=><button key={item} onClick={()=>setFilter(item)} className={`rounded-2xl border px-4 py-3 text-sm ${filter===item?"border-amber-400/25 bg-amber-400/10 text-amber-200":"border-white/10 bg-white/[0.03] text-white/45 hover:bg-white/[0.06]"}`}>{item}</button>)}</div></div></div>
+      <div className="mt-10 space-y-3">{filtered.map(s=><div key={s.id} className="rounded-3xl border border-white/10 bg-white/[0.045] p-5"><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div className="flex items-center gap-4"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300"><CalendarDays size={19}/></div><div><p className="font-semibold text-white">{s.title}</p><p className="mt-1 text-sm text-white/45">{s.date} · {s.time}</p><p className="mt-1 text-sm text-white/35">{s.location || "Kein Ort hinterlegt"} · {s.leader || "Kein Leiter zugewiesen"}</p></div></div><div className="flex items-center gap-3"><span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/50">{statusLabel(s.status)}</span><span className="text-sm font-semibold text-amber-300">+{s.points}</span><button onClick={()=>openEdit(s.id)} className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/50 hover:text-amber-300"><Edit3 size={16}/></button><button onClick={()=>remove(s.id)} className="rounded-xl border border-red-400/10 bg-red-400/5 p-2 text-red-300/60 hover:text-red-300"><Trash2 size={16}/></button></div></div></div>)}{!filtered.length&&<div className="rounded-3xl border border-white/10 bg-white/[0.045] p-12 text-center"><CalendarDays size={32} className="mx-auto text-white/15"/><h2 className="mt-4 text-xl font-bold text-white">Noch keine Dienste vorhanden</h2><p className="mt-2 text-sm text-white/40">Erstelle den ersten Dienst über „Dienst erstellen“.</p></div>}</div>
+    </section>
+    {showForm&&<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-md"><form onSubmit={submit} className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0b0b0b]/95 p-6 shadow-2xl"><div className="flex items-center justify-between"><div><p className="text-xs uppercase tracking-[0.2em] text-amber-300/70">Dienstverwaltung</p><h2 className="mt-1 text-2xl font-bold text-white">{editingId?"Dienst bearbeiten":"Dienst erstellen"}</h2></div><button type="button" onClick={()=>setShowForm(false)} className="rounded-xl p-2 text-white/40 hover:text-white"><X size={20}/></button></div><div className="mt-6 grid gap-4 md:grid-cols-2"><Field label="Titel"><input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></Field><Field label="Datum"><input required type="date" value={form.dateISO} onChange={e=>setForm({...form,dateISO:e.target.value})}/></Field><Field label="Uhrzeit"><input required type="time" value={form.time} onChange={e=>setForm({...form,time:e.target.value})}/></Field><Field label="Punkte"><input required min={0} type="number" value={form.points} onChange={e=>setForm({...form,points:Number(e.target.value)})}/></Field><Field label="Ort"><input value={form.location} onChange={e=>setForm({...form,location:e.target.value})}/></Field><Field label="Treffpunkt / Hinweis"><input value={form.meeting} onChange={e=>setForm({...form,meeting:e.target.value})}/></Field><Field label="Leiter"><select value={form.leaderId} onChange={e=>setForm({...form,leaderId:e.target.value})}><option value="">Kein Leiter</option>{people.filter(p=>["leiter","planschreiber","admin"].includes(p.role)).map(p=><option key={p.id} value={p.id}>{p.display_name||"Ohne Namen"}</option>)}</select></Field><Field label="Messdiener"><select value={form.assignedTo} onChange={e=>setForm({...form,assignedTo:e.target.value})}><option value="">Nicht zugewiesen</option>{people.map(p=><option key={p.id} value={p.id}>{p.display_name||"Ohne Namen"}</option>)}</select></Field><Field label="Status"><select value={form.status} onChange={e=>setForm({...form,status:e.target.value as ServiceFormInput["status"]})}><option value="scheduled">Eingeplant</option><option value="exchange_requested">Vertretung gesucht</option><option value="taken_over">Übernommen</option><option value="excused">Abgemeldet</option><option value="completed">Abgeschlossen</option></select></Field></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setShowForm(false)} className="rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/60">Abbrechen</button><button disabled={saving} className="rounded-2xl border border-amber-300/20 bg-amber-300/10 px-5 py-3 text-sm font-semibold text-amber-200 disabled:opacity-50">{saving?"Speichern…":editingId?"Änderungen speichern":"Dienst erstellen"}</button></div>{demoMode&&<p className="mt-4 text-xs text-amber-300/60">Demo-Modus aktiv – diese Änderung wird nur in der Demo-Datenwelt gespeichert und beim Ausschalten zurückgesetzt.</p>}</form></div>}
+  </main>;
 }
-function ScheduleStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) { return <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-5"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">{icon}</div><div><p className="text-xs text-white/35">{label}</p><p className="mt-0.5 font-semibold text-white">{value}</p></div></div></div>; }
+
+function statusLabel(status: string) { return ({scheduled:"Eingeplant",exchange_requested:"Vertretung gesucht",taken_over:"Übernommen",excused:"Abgemeldet",completed:"Abgeschlossen"} as Record<string,string>)[status] ?? status; }
+function ScheduleStat({icon,label,value}:{icon:ReactNode;label:string;value:string}){return <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-5"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">{icon}</div><div><p className="text-xs text-white/35">{label}</p><p className="mt-0.5 font-semibold text-white">{value}</p></div></div></div>}
+function Field({label,children}:{label:string;children:ReactNode}){return <label className="block"><span className="mb-2 block text-xs font-medium text-white/45">{label}</span>{children}</label>}
