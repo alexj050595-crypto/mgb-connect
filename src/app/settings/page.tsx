@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft, Bell, CalendarDays, Check, ChevronRight, CircleUserRound,
+  ArrowLeft, Bell, CalendarDays, ChevronRight, CircleUserRound,
   Eye, Globe2, Lock, Palette, Shield, Settings2,
 } from "lucide-react";
 import Background from "@/components/layout/Background";
@@ -11,17 +11,9 @@ import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
 import SmoothToggle from "@/components/ui/smooth-toggle";
 import { useRole } from "@/context/RoleContext";
-import type { UserRole } from "@/lib/permissions";
-
-type RoleOption = { role: UserRole; title: string; description: string };
-const roleOptions: RoleOption[] = [
-  { role: "messdiener", title: "Messdiener", description: "Eigene Dienste, Punkte und Tauschbörse testen." },
-  { role: "leiter", title: "Leiter", description: "Leiterbereich und organisatorische Bereiche testen." },
-  { role: "planschreiber", title: "Planschreiber", description: "Planung und Anfragen testen." },
-  { role: "admin", title: "Administrator", description: "Alle Verwaltungs- und Systembereiche testen." },
-];
 
 type ToggleRowProps = { title: string; description: string; value: boolean; onChange: () => void };
+
 function ToggleRow({ title, description, value, onChange }: ToggleRowProps) {
   return (
     <div className="flex w-full items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]">
@@ -39,7 +31,7 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState({ services: true, exchange: true, news: true, important: true });
   const [appearance, setAppearance] = useState({ animations: true, background: true, compact: false });
   const [privacy, setPrivacy] = useState({ profile: true, points: true, ranking: true });
-  const { role, roleLabel, setRole } = useRole();
+  const { roleLabel } = useRole();
   const toggle = <T extends object>(key: keyof T, setter: React.Dispatch<React.SetStateAction<T>>) => setter(v => ({ ...v, [key]: !v[key] }));
 
   return (
@@ -50,7 +42,7 @@ export default function SettingsPage() {
       <Topbar sidebarOpen={sidebarOpen} onMenuClick={() => setSidebarOpen(true)} />
       <section className="relative z-10 mx-auto max-w-5xl px-6 pb-16 pt-36">
         <Link href="/" className="mb-8 inline-flex items-center gap-2 text-white/55 transition hover:text-white"><ArrowLeft size={18} />Zurück zum Dashboard</Link>
-        <div className="mb-10"><p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Persönlich</p><h1 className="mt-2 text-5xl font-black tracking-tight text-white">Einstellungen</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">Passe dein MGB-Connect-Erlebnis an. Spätere Kontofunktionen werden direkt mit deinem Benutzerkonto verbunden.</p></div>
+        <div className="mb-10"><p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Persönlich</p><h1 className="mt-2 text-5xl font-black tracking-tight text-white">Einstellungen</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">Passe dein MGB-Connect-Erlebnis an. Deine Rolle wird direkt aus deinem Benutzerkonto geladen.</p></div>
 
         <SettingsSection icon={<CircleUserRound size={21} />} eyebrow="Konto" title="Profil & Konto" description="Deine persönlichen Kontoinformationen.">
           <div className="grid gap-3 sm:grid-cols-2"><InfoRow title="Name" value="Tim Mustermann" /><InfoRow title="E-Mail" value="Noch nicht verbunden" /><InfoRow title="Rolle" value={roleLabel} /><InfoRow title="Kontostatus" value="Aktiv" /></div>
@@ -72,7 +64,6 @@ export default function SettingsPage() {
         <SettingsSection icon={<Shield size={21} />} eyebrow="Sicherheit" title="Sicherheit" description="Weitere Sicherheitsfunktionen werden mit Supabase Auth verbunden."><div className="grid gap-3 sm:grid-cols-2"><ActionRow icon={<Lock size={18} />} title="Passwort ändern" description="Für das echte Konto verfügbar." /><ActionRow icon={<Shield size={18} />} title="Angemeldete Geräte" description="Später aktive Sitzungen verwalten." /></div></SettingsSection>
         <SettingsSection icon={<Globe2 size={21} />} eyebrow="Sprache" title="Sprache & Region" description="Aktuell ist MGB Connect auf Deutsch ausgelegt."><InfoRow title="Sprache" value="Deutsch" /><div className="mt-3"><InfoRow title="Zeitzone" value="Europe/Berlin" /></div></SettingsSection>
 
-        <SettingsSection icon={<Settings2 size={21} />} eyebrow="Entwicklung" title="Rolle testen" description="Nur für die aktuelle Entwicklungsphase. Im echten Login wird die Rolle aus deinem Benutzerkonto geladen."><div className="grid gap-3">{roleOptions.map(option => <button key={option.role} type="button" onClick={() => setRole(option.role)} className={`group flex w-full items-center justify-between gap-5 rounded-2xl border p-5 text-left transition ${option.role === role ? "border-amber-400/30 bg-amber-400/[0.09]" : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"}`}><div><div className="flex items-center gap-3"><p className="font-bold text-white">{option.title}</p>{option.role === role && <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold text-amber-300">Aktiv</span>}</div><p className="mt-2 text-sm leading-6 text-white/50">{option.description}</p></div>{option.role === role ? <Check size={20} className="shrink-0 text-amber-300" /> : <ChevronRight size={20} className="shrink-0 text-white/25 group-hover:text-white/60" />}</button>)}</div></SettingsSection>
         <div className="mt-10 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-5 text-white/40"><Settings2 size={19} /><p className="text-sm leading-6">MGB Connect · Entwicklungsstand V1 · Viele Einstellungen werden nach dem Datenbank-Launch dauerhaft gespeichert.</p></div>
       </section>
     </main>
