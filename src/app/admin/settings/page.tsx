@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bell, CalendarDays, Coins, Megaphone, Power, Save, Settings, Shield, Trophy, Users } from "lucide-react";
 
@@ -10,6 +10,7 @@ import Topbar from "@/components/layout/Topbar";
 import SmoothToggle from "@/components/ui/smooth-toggle";
 import { useRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import { createClient } from "@/lib/supabase/client";
 import { hasPermission } from "@/lib/permissions";
 
@@ -20,7 +21,6 @@ const defaultNotifications = { serviceReminder: true, exchange: true, news: true
 type FeatureSettings = typeof defaultFeatures;
 type ServiceRuleSettings = typeof defaultServiceRules;
 type NotificationSettings = typeof defaultNotifications;
-
 type SettingRowProps = { title: string; description: string; value: boolean; onChange: () => void };
 
 function Toggle({ value, onChange, label }: { value: boolean; onChange: () => void; label: string }) {
@@ -31,7 +31,7 @@ function SettingRow({ title, description, value, onChange }: SettingRowProps) {
   return <div className="flex items-center justify-between gap-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4"><div><p className="font-semibold text-white">{title}</p><p className="mt-1 text-sm leading-6 text-white/45">{description}</p></div><Toggle value={value} onChange={onChange} label={title} /></div>;
 }
 
-function Section({ icon, eyebrow, title, description, children }: { icon: React.ReactNode; eyebrow: string; title: string; description: string; children: React.ReactNode }) {
+function Section({ icon, eyebrow, title, description, children }: { icon: ReactNode; eyebrow: string; title: string; description: string; children: ReactNode }) {
   return <div className="mt-8 rounded-[30px] border border-white/10 bg-white/[0.045] p-6 backdrop-blur-2xl sm:p-7"><div className="flex items-start gap-4"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">{icon}</div><div><p className="text-sm uppercase tracking-[0.18em] text-white/40">{eyebrow}</p><h2 className="mt-1 text-2xl font-bold text-white">{title}</h2><p className="mt-2 max-w-2xl leading-7 text-white/55">{description}</p></div></div><div className="mt-6">{children}</div></div>;
 }
 
@@ -46,10 +46,10 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const { role } = useRole();
   const { user } = useAuth();
+  const { enabled: demoMode, loading: demoLoading, setEnabled: setDemoMode } = useDemoMode();
 
   useEffect(() => {
     if (!user || !hasPermission(role, "manage_system")) return;
-
     async function loadSettings() {
       const supabase = createClient();
       const { data, error: loadError } = await supabase.from("system_settings").select("key, value").in("key", ["features", "service_rules", "notifications"]);
@@ -58,7 +58,6 @@ export default function AdminSettingsPage() {
         setLoading(false);
         return;
       }
-
       for (const row of data ?? []) {
         if (row.key === "features") setFeatures({ ...defaultFeatures, ...(row.value as Partial<FeatureSettings>) });
         if (row.key === "service_rules") setServiceRules({ ...defaultServiceRules, ...(row.value as Partial<ServiceRuleSettings>) });
@@ -66,7 +65,6 @@ export default function AdminSettingsPage() {
       }
       setLoading(false);
     }
-
     void loadSettings();
   }, [role, user]);
 
@@ -77,6 +75,12 @@ export default function AdminSettingsPage() {
   const toggleFeature = (key: keyof FeatureSettings) => setFeatures((v) => ({ ...v, [key]: !v[key] }));
   const toggleRule = (key: keyof ServiceRuleSettings) => setServiceRules((v) => ({ ...v, [key]: !v[key] }));
   const toggleNotification = (key: keyof NotificationSettings) => setNotifications((v) => ({ ...v, [key]: !v[key] }));
+
+  async function toggleDemoMode() {
+    setError(null);
+    const success = await setDemoMode(!demoMode);
+    if (!success) setError("Der Demo-Modus konnte nicht geändert werden. Prüfe, ob die Migration 005 in Supabase ausgeführt wurde und dein Account Admin ist.");
+  }
 
   async function saveSettings() {
     if (!user) return;
@@ -90,10 +94,7 @@ export default function AdminSettingsPage() {
     ];
     const { error: saveError } = await supabase.from("system_settings").upsert(rows, { onConflict: "key" });
     setSaving(false);
-    if (saveError) {
-      setError("Einstellungen konnten nicht gespeichert werden.");
-      return;
-    }
+    if (saveError) { setError("Einstellungen konnten nicht gespeichert werden."); return; }
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2200);
   }
@@ -111,6 +112,18 @@ export default function AdminSettingsPage() {
       {error && <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-400/[0.07] p-4 text-sm leading-6 text-red-200">{error}</div>}
       {loading && <div className="mb-6 rounded-2xl border border-blue-400/15 bg-blue-400/[0.06] p-4 text-sm text-blue-200/70">Systemeinstellungen werden geladen...</div>}
 
+      <Section icon={<Power size={21} />} eyebrow="Demo" title="Demo-Modus" description="Aktiviere eine vollständig getrennte Testwelt für alle eingeloggten Benutzer. Alle Aktionen werden in Supabase gespeichert, aber beim Ausschalten dauerhaft verworfen.">
+        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] p-5">
+          <SettingRow
+            title={demoMode ? "Demo-Modus ist aktiv" : "Demo-Modus ist deaktiviert"}
+            description={demoMode ? "Alle eingeloggten Benutzer sehen aktuell ausschließlich die Demo-Dienste und Demo-Ankündigungen. Ausschalten löscht sämtliche Demo-Änderungen." : "Aktivieren erstellt für alle aktiven Konten eine frische Testwelt. Die echten Daten bleiben unverändert."}
+            value={demoMode}
+            onChange={() => void toggleDemoMode()}
+          />
+          <p className="mt-4 text-xs leading-5 text-white/35">{demoLoading ? "Demo-Modus wird synchronisiert…" : demoMode ? "TESTBETRIEB · Änderungen sind nicht dauerhaft." : "PRODUKTBETRIEB · Echte Supabase-Daten werden verwendet."}</p>
+        </div>
+      </Section>
+
       <Section icon={<Power size={21} />} eyebrow="Funktionen" title="Module aktivieren" description="Deaktiviere Funktionen, die eure Gemeinschaft aktuell nicht benötigt.">
         <div className="space-y-3"><SettingRow title="Tauschbörse" description="Dienste können zur Vertretung freigegeben und übernommen werden." value={features.exchange} onChange={() => toggleFeature("exchange")} /><SettingRow title="Punktesystem" description="Punkte für abgeschlossene Dienste anzeigen und sammeln." value={features.points} onChange={() => toggleFeature("points")} /><SettingRow title="Rangliste" description="Punktestand der Mitglieder als Ranking anzeigen." value={features.ranking} onChange={() => toggleFeature("ranking")} /><SettingRow title="News & Ankündigungen" description="Aktuelle Informationen in der App veröffentlichen." value={features.news} onChange={() => toggleFeature("news")} /><SettingRow title="Benachrichtigungen" description="App-Hinweise und spätere Push-Benachrichtigungen aktivieren." value={features.notifications} onChange={() => toggleFeature("notifications")} /><SettingRow title="Kalender" description="Kalenderfunktionen für Dienste vorbereiten." value={features.calendar} onChange={() => toggleFeature("calendar")} /></div>
       </Section>
@@ -120,17 +133,14 @@ export default function AdminSettingsPage() {
       </Section>
 
       <Section icon={<Coins size={21} />} eyebrow="Punkte" title="Punktesystem" description="Die konkreten Punktwerte pro Dienst werden weiterhin am jeweiligen Dienst gespeichert."><div className="grid gap-3 sm:grid-cols-3"><ValueCard title="Normaler Dienst" value="10 Punkte" /><ValueCard title="Sonderdienst" value="15 Punkte" /><ValueCard title="Abschluss" value="Automatisch" /></div></Section>
-
       <Section icon={<Bell size={21} />} eyebrow="Benachrichtigungen" title="Standard-Benachrichtigungen" description="Bestimme, welche Ereignisse grundsätzlich gemeldet werden."><div className="space-y-3"><SettingRow title="Dienst-Erinnerungen" description="Erinnerungen an bevorstehende Dienste." value={notifications.serviceReminder} onChange={() => toggleNotification("serviceReminder")} /><SettingRow title="Tauschbörse & Übernahmen" description="Änderungen an Angeboten und Übernahmen." value={notifications.exchange} onChange={() => toggleNotification("exchange")} /><SettingRow title="News" description="Neue Ankündigungen für Mitglieder." value={notifications.news} onChange={() => toggleNotification("news")} /><SettingRow title="Wichtige Mitteilungen" description="Wichtige organisatorische Informationen hervorheben." value={notifications.important} onChange={() => toggleNotification("important")} /></div></Section>
-
       <Section icon={<Users size={21} />} eyebrow="Organisation" title="Allgemeine Einstellungen" description="Grundlegende Werte der Gemeinschaft."><div className="grid gap-3 sm:grid-cols-2"><ValueCard title="Organisation" value="MGB Connect" /><ValueCard title="Zeitzone" value="Europe/Berlin" /><ValueCard title="Standard-Sprache" value="Deutsch" /><ValueCard title="Systemstatus" value="Aktiv" /></div></Section>
-
       <Section icon={<Trophy size={21} />} eyebrow="Verwaltung" title="Weitere Bereiche" description="Die einzelnen Verwaltungsbereiche bleiben bewusst getrennt und übersichtlich."><div className="grid gap-3 sm:grid-cols-2"><AdminLink href="/admin/users" icon={<Users size={18} />} title="Benutzerverwaltung" /><AdminLink href="/admin/roles" icon={<Shield size={18} />} title="Rollen & Rechte" /><AdminLink href="/admin/announcements" icon={<Megaphone size={18} />} title="Ankündigungen" /><AdminLink href="/admin" icon={<Settings size={18} />} title="Administration" /></div></Section>
 
-      <button type="button" onClick={() => void saveSettings()} disabled={saving || loading} className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-5 py-3.5 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/15 disabled:opacity-40"><Save size={18} />{saving ? "Wird gespeichert..." : saved ? "Einstellungen gespeichert" : "Einstellungen speichern"}</button>
+      <button type="button" onClick={() => void saveSettings()} disabled={saving || loading || demoLoading} className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-5 py-3.5 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/15 disabled:opacity-40"><Save size={18} />{saving ? "Wird gespeichert..." : saved ? "Einstellungen gespeichert" : "Einstellungen speichern"}</button>
     </section>
   </main>;
 }
 
 function ValueCard({ title, value }: { title: string; value: string }) { return <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p className="text-sm text-white/40">{title}</p><p className="mt-2 font-bold text-white">{value}</p></div>; }
-function AdminLink({ href, icon, title }: { href: string; icon: React.ReactNode; title: string }) { return <Link href={href} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"><span className="text-amber-300">{icon}</span><span className="font-semibold text-white">{title}</span></Link>; }
+function AdminLink({ href, icon, title }: { href: string; icon: ReactNode; title: string }) { return <Link href={href} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"><span className="text-amber-300">{icon}</span><span className="font-semibold text-white">{title}</span></Link>; }
