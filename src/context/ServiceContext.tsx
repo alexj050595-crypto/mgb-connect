@@ -42,8 +42,10 @@ type ServiceRow = {
   excuse_reason: string | null;
   assigned_to: string | null;
   taken_by: string | null;
+  leader_id: string | null;
   assigned_profile?: { display_name: string | null } | null;
   taken_profile?: { display_name: string | null } | null;
+  leader_profile?: { display_name: string | null } | null;
 };
 
 const ServiceContext = createContext<ServiceContextType | null>(null);
@@ -68,16 +70,20 @@ function rowToService(row: ServiceRow): Service {
     time: row.time,
     church: row.location,
     location: row.location,
-    leader: "",
+    leader: row.leader_profile?.display_name ?? "",
     meeting: row.meeting,
     points: row.points,
     status: row.status,
     assignedTo: row.assigned_to ?? undefined,
     takenById: row.taken_by ?? undefined,
-    takenBy: row.taken_profile?.display_name ?? (row.taken_by ? "Anderer Messdiener" : undefined),
+    takenBy:
+      row.taken_profile?.display_name ??
+      (row.taken_by ? "Anderer Messdiener" : undefined),
     excuseReason:
       row.excuse_reason &&
-      ["Krankheit", "Schule", "Familie", "Urlaub", "Sonstiges"].includes(row.excuse_reason)
+      ["Krankheit", "Schule", "Familie", "Urlaub", "Sonstiges"].includes(
+        row.excuse_reason
+      )
         ? (row.excuse_reason as ExcuseReason)
         : undefined,
   };
@@ -110,18 +116,20 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from("services")
       .select(
-        "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, assigned_profile:profiles!services_assigned_to_fkey(display_name), taken_profile:profiles!services_taken_by_fkey(display_name)"
+        "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, leader_id, assigned_profile:profiles!services_assigned_to_fkey(display_name), taken_profile:profiles!services_taken_by_fkey(display_name), leader_profile:profiles!services_leader_id_fkey(display_name)"
       )
       .order("date_iso", { ascending: true });
 
-    if (!error && data && data.length > 0) {
+    if (!error && data) {
       setServices((data as ServiceRow[]).map(rowToService));
       setUsingSupabase(true);
       return;
     }
 
-    setUsingSupabase(false);
-    setServices(loadLocalServices());
+    // Authenticated users must never fall back to demo services. An empty or
+    // temporarily unavailable database should result in an empty real-data view.
+    setUsingSupabase(true);
+    setServices([]);
   }
 
   useEffect(() => {
@@ -134,7 +142,7 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
     } catch {
-      // LocalStorage is only the presentation fallback.
+      // LocalStorage is only the presentation fallback for signed-out users.
     }
   }, [services, usingSupabase]);
 
@@ -149,9 +157,10 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
     reason?: ExcuseReason
   ) {
     if (usingSupabase && user) {
-      const params = rpcName === "excuse_service"
-        ? { p_service_id: id, p_reason: reason }
-        : { p_service_id: id };
+      const params =
+        rpcName === "excuse_service"
+          ? { p_service_id: id, p_reason: reason }
+          : { p_service_id: id };
 
       const { data, error } = await supabase.rpc(rpcName, params);
       if (!error && data === true) {
@@ -166,48 +175,84 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
 
         if (rpcName === "request_service_exchange") {
           return service.status === "scheduled"
-            ? { ...service, status: "exchange_requested", takenBy: undefined, takenById: undefined, excuseReason: undefined }
+            ? {
+                ...service,
+                status: "exchange_requested",
+                takenBy: undefined,
+                takenById: undefined,
+                excuseReason: undefined,
+              }
             : service;
         }
         if (rpcName === "take_service") {
           return service.status === "exchange_requested"
-            ? { ...service, status: "taken_over", takenBy: "Anderer Messdiener" }
+            ? {
+                ...service,
+                status: "taken_over",
+                takenBy: "Anderer Messdiener",
+              }
             : service;
         }
         if (rpcName === "reject_service_takeover") {
           return service.status === "taken_over"
-            ? { ...service, status: "exchange_requested", takenBy: undefined, takenById: undefined }
+            ? {
+                ...service,
+                status: "exchange_requested",
+                takenBy: undefined,
+                takenById: undefined,
+              }
             : service;
         }
         if (rpcName === "excuse_service") {
           return service.status === "scheduled"
-            ? { ...service, status: "excused", excuseReason: reason, takenBy: undefined, takenById: undefined }
+            ? {
+                ...service,
+                status: "excused",
+                excuseReason: reason,
+                takenBy: undefined,
+                takenById: undefined,
+              }
             : service;
         }
-        return { ...service, status: "scheduled", excuseReason: undefined, takenBy: undefined, takenById: undefined };
+        return {
+          ...service,
+          status: "scheduled",
+          excuseReason: undefined,
+          takenBy: undefined,
+          takenById: undefined,
+        };
       })
     );
   }
 
-  const requestExchange = (id: string) => runTransition("request_service_exchange", id);
+  const requestExchange = (id: string) =>
+    runTransition("request_service_exchange", id);
   const takeService = (id: string) => runTransition("take_service", id);
-  const rejectTakeover = (id: string) => runTransition("reject_service_takeover", id);
-  const excuseService = (id: string, reason: ExcuseReason) => runTransition("excuse_service", id, reason);
+  const rejectTakeover = (id: string) =>
+    runTransition("reject_service_takeover", id);
+  const excuseService = (id: string, reason: ExcuseReason) =>
+    runTransition("excuse_service", id, reason);
   const restoreService = (id: string) => runTransition("restore_service", id);
 
-  const getService = (id: string) => services.find((service) => service.id === id);
+  const getService = (id: string) =>
+    services.find((service) => service.id === id);
 
   const myServices = useMemo(
     () =>
       user
-        ? services.filter((service) => service.assignedTo === user.id || service.takenById === user.id)
+        ? services.filter(
+            (service) =>
+              service.assignedTo === user.id ||
+              service.takenById === user.id
+          )
         : services,
     [services, user?.id]
   );
 
   const getTotalPoints = () =>
     myServices.reduce(
-      (total, service) => (service.status === "completed" ? total + service.points : total),
+      (total, service) =>
+        service.status === "completed" ? total + service.points : total,
       0
     );
 
@@ -229,11 +274,17 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
     [services, myServices, usingSupabase, user?.id]
   );
 
-  return <ServiceContext.Provider value={value}>{children}</ServiceContext.Provider>;
+  return (
+    <ServiceContext.Provider value={value}>
+      {children}
+    </ServiceContext.Provider>
+  );
 }
 
 export function useServices() {
   const context = useContext(ServiceContext);
-  if (!context) throw new Error("useServices must be used inside a ServiceProvider");
+  if (!context) {
+    throw new Error("useServices must be used inside a ServiceProvider");
+  }
   return context;
 }
