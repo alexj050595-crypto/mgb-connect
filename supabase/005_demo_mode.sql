@@ -77,7 +77,7 @@ declare
   idx integer := 0;
 begin
   if not public.is_admin() then raise exception 'Nur Administratoren dürfen den Demo-Modus verwalten'; end if;
-  delete from public.demo_services;
+  delete from public.demo_services where true;
   for p in select id from public.profiles where active = true order by created_at, id loop
     idx := idx + 1;
     insert into public.demo_services(title,date_iso,time,location,meeting,points,status,assigned_to)
@@ -97,7 +97,7 @@ returns boolean language plpgsql security definer set search_path = public
 as $$
 begin
   if not public.is_admin() then return false; end if;
-  if p_enabled then perform public.reset_demo_data(); else delete from public.demo_services; end if;
+  if p_enabled then perform public.reset_demo_data(); else delete from public.demo_services where true; end if;
   insert into public.system_settings(key,value,updated_at,updated_by)
   values ('demo_mode',to_jsonb(p_enabled),now(),auth.uid())
   on conflict (key) do update set value=excluded.value,updated_at=excluded.updated_at,updated_by=excluded.updated_by;
