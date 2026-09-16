@@ -46,7 +46,7 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const { role } = useRole();
   const { user } = useAuth();
-  const { enabled: demoMode, loading: demoLoading, setEnabled: setDemoMode } = useDemoMode();
+  const { enabled: demoMode, loading: demoLoading, refresh: refreshDemoMode } = useDemoMode();
 
   useEffect(() => {
     if (!user || !hasPermission(role, "manage_system")) return;
@@ -54,7 +54,7 @@ export default function AdminSettingsPage() {
       const supabase = createClient();
       const { data, error: loadError } = await supabase.from("system_settings").select("key, value").in("key", ["features", "service_rules", "notifications"]);
       if (loadError) {
-        setError("Systemeinstellungen konnten nicht geladen werden. Hast du die Migration 003 ausgeführt?");
+        setError(`Systemeinstellungen konnten nicht geladen werden: ${loadError.message}`);
         setLoading(false);
         return;
       }
@@ -77,9 +77,22 @@ export default function AdminSettingsPage() {
   const toggleNotification = (key: keyof NotificationSettings) => setNotifications((v) => ({ ...v, [key]: !v[key] }));
 
   async function toggleDemoMode() {
+    if (!user) {
+      setError("Kein angemeldeter Benutzer vorhanden.");
+      return;
+    }
     setError(null);
-    const success = await setDemoMode(!demoMode);
-    if (!success) setError("Der Demo-Modus konnte nicht geändert werden. Prüfe, ob die Migration 005 in Supabase ausgeführt wurde und dein Account Admin ist.");
+    const supabase = createClient();
+    const { data, error: rpcError } = await supabase.rpc("set_demo_mode", { p_enabled: !demoMode });
+    if (rpcError) {
+      setError(`Demo-Modus konnte nicht geändert werden: ${rpcError.message}${rpcError.details ? ` · ${rpcError.details}` : ""}${rpcError.hint ? ` · ${rpcError.hint}` : ""}`);
+      return;
+    }
+    if (data !== true) {
+      setError("Demo-Modus wurde vom Server abgelehnt. Der aktuelle Account wird von Supabase nicht als aktiver Administrator erkannt.");
+      return;
+    }
+    await refreshDemoMode();
   }
 
   async function saveSettings() {
@@ -94,7 +107,7 @@ export default function AdminSettingsPage() {
     ];
     const { error: saveError } = await supabase.from("system_settings").upsert(rows, { onConflict: "key" });
     setSaving(false);
-    if (saveError) { setError("Einstellungen konnten nicht gespeichert werden."); return; }
+    if (saveError) { setError(`Einstellungen konnten nicht gespeichert werden: ${saveError.message}`); return; }
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2200);
   }
@@ -109,7 +122,7 @@ export default function AdminSettingsPage() {
       <Link href="/admin" className="mb-8 inline-flex items-center gap-2 text-white/55 transition hover:text-white"><ArrowLeft size={18} />Zurück zur Administration</Link>
       <div className="mb-10"><p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Administration</p><h1 className="mt-2 text-5xl font-black tracking-tight text-white">Systemverwaltung</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">Zentrale Funktionen und Regeln von MGB Connect direkt über die Datenbank verwalten.</p></div>
 
-      {error && <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-400/[0.07] p-4 text-sm leading-6 text-red-200">{error}</div>}
+      {error && <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-400/[0.07] p-4 text-sm leading-6 text-red-200"><p className="font-semibold">Fehler</p><p className="mt-1 break-words">{error}</p></div>}
       {loading && <div className="mb-6 rounded-2xl border border-blue-400/15 bg-blue-400/[0.06] p-4 text-sm text-blue-200/70">Systemeinstellungen werden geladen...</div>}
 
       <Section icon={<Power size={21} />} eyebrow="Demo" title="Demo-Modus" description="Aktiviere eine vollständig getrennte Testwelt für alle eingeloggten Benutzer. Alle Aktionen werden in Supabase gespeichert, aber beim Ausschalten dauerhaft verworfen.">
