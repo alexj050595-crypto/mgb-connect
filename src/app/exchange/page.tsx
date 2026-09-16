@@ -18,6 +18,7 @@ import Topbar from "@/components/layout/Topbar";
 import TakeoverDialog from "@/components/services/TakeoverDialog";
 import { useServices } from "@/context/ServiceContext";
 import { useAuth } from "@/context/AuthContext";
+import { useDemoMode } from "@/context/DemoModeContext";
 import type { Service } from "@/data/services";
 
 export default function ExchangePage() {
@@ -26,14 +27,15 @@ export default function ExchangePage() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const { services, takeService } = useServices();
   const { user } = useAuth();
+  const { enabled: demoMode } = useDemoMode();
 
   const openServices = useMemo(() => {
     return services.filter(
       (service) =>
         service.status === "exchange_requested" &&
-        service.assignedTo !== user?.id
+        (demoMode || service.assignedTo !== user?.id)
     );
-  }, [services, user?.id]);
+  }, [services, user?.id, demoMode]);
 
   const handleTakeService = (id: string) => {
     setSelectedServiceId(id);
@@ -117,9 +119,17 @@ export default function ExchangePage() {
           </div>
         ) : (
           <div className="space-y-5">
-            {openServices.map((service) => (
-              <ExchangeServiceCard key={service.id} service={service} onTake={() => handleTakeService(service.id)} />
-            ))}
+            {openServices.map((service) => {
+              const isOwnDemoRelease = demoMode && service.assignedTo === user?.id;
+              return (
+                <ExchangeServiceCard
+                  key={service.id}
+                  service={service}
+                  ownDemoRelease={isOwnDemoRelease}
+                  onTake={() => handleTakeService(service.id)}
+                />
+              );
+            })}
           </div>
         )}
       </section>
@@ -129,7 +139,15 @@ export default function ExchangePage() {
   );
 }
 
-function ExchangeServiceCard({ service, onTake }: { service: Service; onTake: () => void }) {
+function ExchangeServiceCard({
+  service,
+  onTake,
+  ownDemoRelease = false,
+}: {
+  service: Service;
+  onTake: () => void;
+  ownDemoRelease?: boolean;
+}) {
   return (
     <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-6 backdrop-blur-2xl transition hover:border-amber-400/20 hover:bg-white/[0.06]">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -139,7 +157,9 @@ function ExchangeServiceCard({ service, onTake }: { service: Service; onTake: ()
               <CalendarDays size={21} />
             </div>
             <div>
-              <p className="text-sm uppercase tracking-[0.16em] text-amber-300/70">Vertretung gesucht</p>
+              <p className="text-sm uppercase tracking-[0.16em] text-amber-300/70">
+                {ownDemoRelease ? "Deine Freigabe · Demo" : "Vertretung gesucht"}
+              </p>
               <h3 className="mt-1 text-2xl font-bold text-white">{service.title}</h3>
             </div>
           </div>
@@ -157,10 +177,17 @@ function ExchangeServiceCard({ service, onTake }: { service: Service; onTake: ()
         </div>
 
         <div className="flex shrink-0 flex-col gap-3 lg:w-56">
-          <button type="button" onClick={onTake} className="flex items-center justify-center gap-2 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-5 py-4 font-semibold text-amber-200 transition hover:border-amber-400/40 hover:bg-amber-400/15 hover:text-amber-100">
-            <RefreshCcw size={18} />
-            Übernehmen
-          </button>
+          {ownDemoRelease ? (
+            <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4 text-center font-semibold text-white/45">
+              <CheckCircle2 size={18} />
+              Freigegeben
+            </div>
+          ) : (
+            <button type="button" onClick={onTake} className="flex items-center justify-center gap-2 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-5 py-4 font-semibold text-amber-200 transition hover:border-amber-400/40 hover:bg-amber-400/15 hover:text-amber-100">
+              <RefreshCcw size={18} />
+              Übernehmen
+            </button>
+          )}
           <Link href={`/services/${service.id}`} className="rounded-xl px-4 py-2 text-center text-sm text-white/40 transition hover:text-white/70">
             Details anzeigen
           </Link>
