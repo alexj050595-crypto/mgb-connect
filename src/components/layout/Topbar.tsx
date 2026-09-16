@@ -7,99 +7,44 @@ type TopbarProps = {
   sidebarOpen: boolean;
 };
 
-export default function Topbar({
-  onMenuClick,
-  sidebarOpen,
-}: TopbarProps) {
+export default function Topbar({ onMenuClick, sidebarOpen }: TopbarProps) {
   return (
     <header
-      className="
-        fixed
-        top-0
-        left-0
-        right-0
-        z-40
-        flex
-        items-center
-        justify-between
-        h-20
-        px-8
-        pointer-events-none
-      "
+      className="fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between px-4 sm:h-20 sm:px-8 pointer-events-none"
     >
-      <div className="flex items-center gap-5 pointer-events-auto">
-
+      <div className="flex items-center gap-3 sm:gap-5 pointer-events-auto">
         <button
+          type="button"
           onClick={onMenuClick}
-          className="
-            flex
-            h-11
-            w-11
-            items-center
-            justify-center
-            rounded-2xl
-            border
-            border-white/10
-            bg-white/5
-            backdrop-blur-xl
-            transition-all
-            duration-200
-            hover:bg-white/10
-            hover:shadow-[0_0_18px_rgba(255,185,60,.15)]
-          "
+          aria-label="Menü öffnen"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl transition-all duration-200 hover:bg-white/10 hover:shadow-[0_0_18px_rgba(255,185,60,.15)] sm:h-11 sm:w-11 sm:rounded-2xl"
         >
-          <Menu size={22} color="white" />
+          <Menu size={21} className="text-white" />
         </button>
 
         {!sidebarOpen && (
-          <h2 className="text-2xl font-bold tracking-tight text-white">
+          <h2 className="text-lg font-bold tracking-tight text-white sm:text-2xl">
             MGB Connect
           </h2>
         )}
       </div>
 
-      <div className="flex items-center gap-4 pointer-events-auto">
-
+      <div className="flex items-center gap-2 sm:gap-4 pointer-events-auto">
         <button
-          className="
-            flex
-            h-11
-            w-11
-            items-center
-            justify-center
-            rounded-2xl
-            border
-            border-white/10
-            bg-white/5
-            backdrop-blur-xl
-            transition-all
-            duration-200
-            hover:bg-white/10
-          "
+          type="button"
+          aria-label="Benachrichtigungen"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl transition-all duration-200 hover:bg-white/10 sm:h-11 sm:w-11 sm:rounded-2xl"
         >
-          <Bell size={19} color="white" />
+          <Bell size={18} className="text-white sm:h-[19px] sm:w-[19px]" />
         </button>
 
         <button
-          className="
-            flex
-            h-11
-            w-11
-            items-center
-            justify-center
-            rounded-2xl
-            border
-            border-white/10
-            bg-white/5
-            backdrop-blur-xl
-            transition-all
-            duration-200
-            hover:bg-white/10
-          "
+          type="button"
+          aria-label="Profil"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl transition-all duration-200 hover:bg-white/10 sm:h-11 sm:w-11 sm:rounded-2xl"
         >
-          <CircleUserRound size={21} color="white" />
+          <CircleUserRound size={20} className="text-white sm:h-[21px] sm:w-[21px]" />
         </button>
-
       </div>
     </header>
   );
