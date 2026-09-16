@@ -23,9 +23,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { claims },
-  } = await supabase.auth.getClaims();
+  const { data, error } = await supabase.auth.getClaims();
+  const claims = data?.claims ?? null;
+
+  if (error) {
+    console.error("Supabase auth getClaims failed:", error.message);
+  }
 
   const pathname = request.nextUrl.pathname;
   const isPublicPath = PUBLIC_PATHS.has(pathname);
