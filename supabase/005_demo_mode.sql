@@ -73,21 +73,72 @@ returns void language plpgsql security definer set search_path = public
 as $$
 declare
   p record;
+  other_p record;
   base_date date := current_date;
   idx integer := 0;
+  member_index integer := 0;
 begin
   if not public.is_admin() then raise exception 'Nur Administratoren dürfen den Demo-Modus verwalten'; end if;
+
   delete from public.demo_services where true;
+
+  -- Create a small but complete demo dataset for every active member.
+  -- Every member gets examples for the important service states so that
+  -- "Meine Dienste" is useful regardless of which account is logged in.
   for p in select id from public.profiles where active = true order by created_at, id loop
-    idx := idx + 1;
+    member_index := member_index + 1;
+
+    -- 1. Completed service: points/history example.
     insert into public.demo_services(title,date_iso,time,location,meeting,points,status,assigned_to)
-    values ('Demo-Dienst ' || idx, base_date + idx,
-      case when idx % 2 = 0 then '18:00' else '10:00' end,
-      'Demo-Ort','Treffen 30 Minuten vorher',case when idx % 3 = 0 then 15 else 10 end,
-      case when idx = 1 then 'completed'::public.service_status else 'scheduled'::public.service_status end,p.id);
+    values ('Demo-Dienst abgeschlossen', base_date - 3, '10:00', 'Demo-Ort', 'Treffen 30 Minuten vorher', 15, 'completed', p.id);
+
+    -- 2. Normal upcoming service.
+    insert into public.demo_services(title,date_iso,time,location,meeting,points,status,assigned_to)
+    values ('Demo-Dienst geplant', base_date + member_index, '18:00', 'Demo-Ort', 'Treffen 30 Minuten vorher', 10, 'scheduled', p.id);
+
+    -- 3. Another upcoming service, useful for the service list/calendar-like views.
+    insert into public.demo_services(title,date_iso,time,location,meeting,points,status,assigned_to)
+    values ('Demo-Dienst Abendmesse', base_date + member_index + 4, '19:00', 'Demo-Ort', 'Treffen 30 Minuten vorher', 10, 'scheduled', p.id);
+
+    -- 4. Excused service: excuse state/reason can be displayed and tested.
+    insert into public.demo_services(title,date_iso,time,location,meeting,points,status,excuse_reason,assigned_to)
+    values ('Demo-Dienst entschuldigt', base_date + member_index + 7, '10:00', 'Demo-Ort', 'Treffen 30 Minuten vorher', 10, 'excused', 'Schule', p.id);
+
+    -- 5. Exchange request belonging to this member. It should appear in
+    -- "Meine Dienste" and in the exchange workflow as an outgoing release.
+    insert into public.demo_services(title,date_iso,time,location,meeting,points,status,assigned_to)
+    values ('Demo-Dienst zum Tauschen', base_date + member_index + 2, '18:30', 'Demo-Ort', 'Treffen 30 Minuten vorher', 10, 'exchange_requested', p.id);
+
+    -- 6. Taken-over service. If another active member exists, use that
+    -- member as the takeover target so the takeover workflow is visible.
+    select id into other_p
+    from public.profiles
+    where active = true and id <> p.id
+    order by created_at, id
+    limit 1;
+
+    insert into public.demo_services(title,date_iso,time,location,meeting,points,status,assigned_to,taken_by)
+    values (
+      'Demo-Dienst übernommen',
+      base_date + member_index + 5,
+      '17:30',
+      'Demo-Ort',
+      'Treffen 30 Minuten vorher',
+      15,
+      'taken_over',
+      p.id,
+      coalesce(other_p.id, p.id)
+    );
   end loop;
+
+  -- Several unassigned exchange offers make the Tauschbörse useful even
+  -- when there is only one active account in the database.
   insert into public.demo_services(title,date_iso,time,location,meeting,points,status)
-  values ('Offener Demo-Dienst',base_date + 3,'18:30','Demo-Ort','Treffen 30 Minuten vorher',10,'exchange_requested');
+  values
+    ('Offener Demo-Dienst – Sonntag', base_date + 3, '10:00', 'Demo-Ort', 'Treffen 30 Minuten vorher', 10, 'exchange_requested'),
+    ('Offener Demo-Dienst – Abend', base_date + 6, '18:30', 'Demo-Ort', 'Treffen 30 Minuten vorher', 15, 'exchange_requested'),
+    ('Offener Demo-Dienst – Wochenende', base_date + 9, '11:00', 'Demo-Ort', 'Treffen 30 Minuten vorher', 10, 'exchange_requested'),
+    ('Offener Demo-Dienst – Zusatztermin', base_date + 12, '17:00', 'Demo-Ort', 'Treffen 30 Minuten vorher', 15, 'exchange_requested');
 end;
 $$;
 grant execute on function public.reset_demo_data() to authenticated;
