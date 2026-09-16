@@ -3,11 +3,16 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 import Background from "@/components/layout/Background";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
+  const safeNext = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,7 +32,7 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.assign("/");
+    window.location.assign(safeNext);
   }
 
   return (
@@ -43,12 +48,12 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-7 space-y-4">
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-white/65">E-Mail</span>
+            <span className="mb-2 block text-sm font-medium text-white/65">E-Mail-Adresse</span>
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required autoComplete="email" className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none placeholder:text-white/25 focus:border-amber-400/30" placeholder="name@example.de" />
           </label>
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-white/65">Passwort</span>
-            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required autoComplete="current-password" className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none focus:border-amber-400/30" />
+            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required autoComplete="current-password" className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none focus:border-amber-400/30" placeholder="Dein Passwort" />
           </label>
 
           {error && <p className="rounded-2xl border border-red-400/15 bg-red-400/[0.06] px-4 py-3 text-sm text-red-200/80">{error}</p>}
