@@ -9,6 +9,7 @@ import {
   ChevronRight,
   CircleUserRound,
   Eye,
+  EyeOff,
   Globe2,
   Lock,
   Palette,
@@ -21,6 +22,7 @@ import Topbar from "@/components/layout/Topbar";
 import SmoothToggle from "@/components/ui/smooth-toggle";
 import { useRole } from "@/context/RoleContext";
 import { useAuth } from "@/context/AuthContext";
+import { createClient } from "@/lib/supabase/client";
 
 type ToggleRowProps = {
   title: string;
@@ -46,6 +48,7 @@ export default function SettingsPage() {
   const [notifications, setNotifications] = useState({ services: true, exchange: true, news: true, important: true });
   const [appearance, setAppearance] = useState({ animations: true, background: true, compact: false });
   const [privacy, setPrivacy] = useState({ profile: true, points: true, ranking: true });
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const { roleLabel } = useRole();
   const { user, profile } = useAuth();
 
@@ -84,7 +87,7 @@ export default function SettingsPage() {
             <InfoRow title="Kontostatus" value={accountStatus} />
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <ActionRow icon={<Lock size={18} />} title="Passwort ändern" description="Das Passwort wird über Supabase Auth verwaltet." />
+            <PasswordChangeRow open={passwordOpen} onOpen={() => setPasswordOpen(true)} onClose={() => setPasswordOpen(false)} />
             <ActionRow icon={<CircleUserRound size={18} />} title="Profil bearbeiten" description="Profiländerungen können später direkt hier verwaltet werden." />
           </div>
         </SettingsSection>
@@ -122,7 +125,7 @@ export default function SettingsPage() {
 
         <SettingsSection icon={<Shield size={21} />} eyebrow="Sicherheit" title="Sicherheit" description="Dein Konto wird über Supabase Auth abgesichert.">
           <div className="grid gap-3 sm:grid-cols-2">
-            <ActionRow icon={<Lock size={18} />} title="Passwort ändern" description="Passwortverwaltung über das echte Konto." />
+            <PasswordChangeRow open={passwordOpen} onOpen={() => setPasswordOpen(true)} onClose={() => setPasswordOpen(false)} />
             <ActionRow icon={<Shield size={18} />} title="Angemeldete Geräte" description="Sitzungsverwaltung kann später ergänzt werden." />
           </div>
         </SettingsSection>
@@ -143,6 +146,144 @@ export default function SettingsPage() {
 
 function InfoRow({ title, value }: { title: string; value: string }) {
   return <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4"><span className="text-sm text-white/45">{title}</span><span className="max-w-[70%] truncate text-right text-sm font-semibold text-white/80">{value}</span></div>;
+}
+
+function PasswordChangeRow({ open, onOpen, onClose }: { open: boolean; onOpen: () => void; onClose: () => void }) {
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const supabase = createClient();
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+
+    if (password.length < 6) {
+      setError("Das neue Passwort muss mindestens 6 Zeichen lang sein.");
+      return;
+    }
+
+    if (password !== confirmation) {
+      setError("Die Passwörter stimmen nicht überein.");
+      return;
+    }
+
+    setSaving(true);
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    setSaving(false);
+
+    if (updateError) {
+      setError(updateError.message || "Das Passwort konnte nicht geändert werden.");
+      return;
+    }
+
+    setPassword("");
+    setConfirmation("");
+    setMessage("Passwort erfolgreich geändert.");
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-left transition hover:border-amber-300/25 hover:bg-white/[0.05]"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-400/15 bg-amber-400/10 text-amber-300">
+          <Lock size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-white">Passwort ändern</p>
+          <p className="mt-1 text-sm leading-6 text-white/45">Passwort direkt über dein Supabase-Konto ändern.</p>
+        </div>
+        <ChevronRight size={18} className="shrink-0 text-white/25" />
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-amber-400/15 bg-white/[0.035] p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-semibold text-white">Passwort ändern</p>
+          <p className="mt-1 text-sm leading-6 text-white/45">Mindestens 6 Zeichen.</p>
+        </div>
+        <button type="button" onClick={onClose} className="text-sm text-white/45 transition hover:text-white">
+          Schließen
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <PasswordInput
+          value={password}
+          onChange={setPassword}
+          placeholder="Neues Passwort"
+          visible={showPassword}
+          onToggle={() => setShowPassword((value) => !value)}
+        />
+        <PasswordInput
+          value={confirmation}
+          onChange={setConfirmation}
+          placeholder="Passwort wiederholen"
+          visible={showConfirmation}
+          onToggle={() => setShowConfirmation((value) => !value)}
+        />
+      </div>
+
+      {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
+      {message && <p className="mt-3 text-sm text-emerald-300">{message}</p>}
+
+      <button
+        type="submit"
+        disabled={saving}
+        className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-300/30 bg-amber-300 px-5 text-sm font-bold text-black transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {saving ? "Wird gespeichert…" : "Neues Passwort speichern"}
+      </button>
+    </form>
+  );
+}
+
+function PasswordInput({
+  value,
+  onChange,
+  placeholder,
+  visible,
+  onToggle,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  visible: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="relative">
+      <input
+        type={visible ? "text" : "password"}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        minLength={6}
+        autoComplete="new-password"
+        className="h-12 w-full rounded-xl border border-white/10 bg-black/20 px-4 pr-12 text-sm text-white outline-none placeholder:text-white/30 focus:border-amber-300/40"
+        required
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={visible ? "Passwort verbergen" : "Passwort anzeigen"}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 transition hover:text-white"
+      >
+        {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+  );
 }
 
 function ActionRow({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
