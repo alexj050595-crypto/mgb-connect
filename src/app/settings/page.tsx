@@ -149,8 +149,10 @@ function InfoRow({ title, value }: { title: string; value: string }) {
 }
 
 function PasswordChangeRow({ open, onOpen, onClose }: { open: boolean; onOpen: () => void; onClose: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -163,6 +165,11 @@ function PasswordChangeRow({ open, onOpen, onClose }: { open: boolean; onOpen: (
     setError("");
     setMessage("");
 
+    if (!currentPassword) {
+      setError("Bitte gib zuerst dein aktuelles Passwort ein.");
+      return;
+    }
+
     if (password.length < 6) {
       setError("Das neue Passwort muss mindestens 6 Zeichen lang sein.");
       return;
@@ -174,6 +181,25 @@ function PasswordChangeRow({ open, onOpen, onClose }: { open: boolean; onOpen: (
     }
 
     setSaving(true);
+
+    const email = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user?.email : null;
+    if (!email) {
+      setSaving(false);
+      setError("Dein angemeldetes Konto konnte nicht ermittelt werden.");
+      return;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      setSaving(false);
+      setError("Das aktuelle Passwort ist nicht korrekt.");
+      return;
+    }
+
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setSaving(false);
 
@@ -182,6 +208,7 @@ function PasswordChangeRow({ open, onOpen, onClose }: { open: boolean; onOpen: (
       return;
     }
 
+    setCurrentPassword("");
     setPassword("");
     setConfirmation("");
     setMessage("Passwort erfolgreich geändert.");
@@ -218,21 +245,30 @@ function PasswordChangeRow({ open, onOpen, onClose }: { open: boolean; onOpen: (
         </button>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 space-y-3">
         <PasswordInput
+          value={currentPassword}
+          onChange={setCurrentPassword}
+          placeholder="Aktuelles Passwort"
+          visible={showCurrentPassword}
+          onToggle={() => setShowCurrentPassword((value) => !value)}
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PasswordInput
           value={password}
           onChange={setPassword}
           placeholder="Neues Passwort"
           visible={showPassword}
           onToggle={() => setShowPassword((value) => !value)}
-        />
-        <PasswordInput
+          />
+          <PasswordInput
           value={confirmation}
           onChange={setConfirmation}
           placeholder="Passwort wiederholen"
           visible={showConfirmation}
           onToggle={() => setShowConfirmation((value) => !value)}
-        />
+          />
+        </div>
       </div>
 
       {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
