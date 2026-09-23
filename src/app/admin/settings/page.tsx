@@ -118,9 +118,9 @@ export default function AdminSettingsPage() {
     <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
     <Topbar sidebarOpen={sidebarOpen} onMenuClick={() => setSidebarOpen(true)} />
 
-    <section className="relative z-10 mx-auto max-w-5xl px-6 pb-16 pt-36">
+    <section className="relative z-10 mx-auto max-w-5xl px-4 pb-16 pt-28 sm:px-6 sm:pt-36">
       <Link href="/admin" className="mb-8 inline-flex items-center gap-2 text-white/55 transition hover:text-white"><ArrowLeft size={18} />Zurück zur Administration</Link>
-      <div className="mb-10"><p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Administration</p><h1 className="mt-2 text-5xl font-black tracking-tight text-white">Systemverwaltung</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">Zentrale Funktionen und Regeln von MGB Connect direkt über die Datenbank verwalten.</p></div>
+      <div className="mb-10"><p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Administration</p><h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">Systemverwaltung</h1><p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">Zentrale Funktionen und Regeln von MGB Connect direkt über die Datenbank verwalten.</p></div>
 
       {error && <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-400/[0.07] p-4 text-sm leading-6 text-red-200"><p className="font-semibold">Fehler</p><p className="mt-1 break-words">{error}</p></div>}
       {loading && <div className="mb-6 rounded-2xl border border-blue-400/15 bg-blue-400/[0.06] p-4 text-sm text-blue-200/70">Systemeinstellungen werden geladen...</div>}
