@@ -24,3 +24,136 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+/* ============================================================
+   MGB CONNECT — mobile-first responsive foundation
+   ============================================================ */
+
+html {
+  width: 100%;
+  min-width: 320px;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  width: 100%;
+  min-width: 320px;
+  margin: 0;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  main {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  /* All authenticated page shells use the same mobile-safe content frame. */
+  main > section.relative.z-10.mx-auto {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-top: calc(5.75rem + env(safe-area-inset-top));
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  main > section.relative.z-10.mx-auto h1 {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    font-size: clamp(1.9rem, 8.2vw, 2.55rem);
+    line-height: 1.08;
+  }
+
+  main > section.relative.z-10.mx-auto h2 {
+    overflow-wrap: anywhere;
+  }
+
+  main > section.relative.z-10.mx-auto p {
+    overflow-wrap: anywhere;
+  }
+
+  /* Prevent dense desktop flex rows from becoming cramped on phones. */
+  main > section.relative.z-10.mx-auto .flex {
+    min-width: 0;
+  }
+
+  /* Give primary controls comfortable touch targets without changing desktop. */
+  main > section.relative.z-10.mx-auto button,
+  main > section.relative.z-10.mx-auto a.inline-flex {
+    min-height: 44px;
+  }
+
+  /* Data-heavy grids collapse before text becomes squeezed. */
+  main > section.relative.z-10.mx-auto .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Search/filter controls stack naturally on narrow screens. */
+  main > section.relative.z-10.mx-auto input,
+  main > section.relative.z-10.mx-auto select,
+  main > section.relative.z-10.mx-auto textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Long service/admin rows may wrap rather than create horizontal scrolling. */
+  main > section.relative.z-10.mx-auto table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Fixed dialogs stay inside the actual safe viewport. */
+  [role="dialog"] {
+    max-height: calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 380px) {
+  main > section.relative.z-10.mx-auto {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  main > section.relative.z-10.mx-auto h1 {
+    font-size: clamp(1.75rem, 8.6vw, 2.15rem);
+  }
+}
+
+@media (max-height: 700px) and (max-width: 640px) {
+  main > section.relative.z-10.mx-auto {
+    padding-top: calc(5rem + env(safe-area-inset-top));
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  main > section.relative.z-10.mx-auto {
+    padding-top: calc(4.5rem + env(safe-area-inset-top));
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+  }
+}
