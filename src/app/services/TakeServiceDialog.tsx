@@ -44,7 +44,9 @@ export default function TakeServiceDialog({
         className="
           relative
           z-10
-          w-full
+          w-[calc(100vw-1.5rem)]
+          max-h-[calc(100dvh-1.5rem)]
+          overflow-y-auto
           max-w-lg
           overflow-hidden
           rounded-[28px]
