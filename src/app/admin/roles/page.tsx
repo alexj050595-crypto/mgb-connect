@@ -145,7 +145,7 @@ export default function AdminRolesPage() {
         <Background />
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <Topbar sidebarOpen={sidebarOpen} onMenuClick={() => setSidebarOpen(true)} />
-        <section className="relative z-10 mx-auto max-w-5xl px-6 pb-12 pt-36">
+        <section className="relative z-10 mx-auto max-w-5xl px-4 pb-12 pt-28 sm:px-6 sm:pt-36">
           <Link href="/" className="mb-8 inline-flex items-center gap-2 text-white/55 hover:text-white"><ArrowLeft size={18} />Zurück zum Dashboard</Link>
           <div className="rounded-[30px] border border-red-400/20 bg-red-400/[0.07] p-8 backdrop-blur-2xl">
             <Lock size={25} className="text-red-300" />
@@ -172,7 +172,7 @@ export default function AdminRolesPage() {
 
         <div className="mb-10 mt-8">
           <p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Administration</p>
-          <h1 className="mt-4 text-5xl font-black tracking-tight text-white">Rollen & Rechte</h1>
+          <h1 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Rollen & Rechte</h1>
           <p className="mt-3 max-w-2xl text-lg leading-7 text-white/60">Rollen zentral konfigurieren und einzelne Berechtigungen für bestimmte Benutzer anpassen.</p>
         </div>
 
