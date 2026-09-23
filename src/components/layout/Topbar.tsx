@@ -10,7 +10,7 @@ type TopbarProps = {
 export default function Topbar({ onMenuClick, sidebarOpen }: TopbarProps) {
   return (
     <header
-      className="fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between px-4 sm:h-20 sm:px-8 pointer-events-none"
+      className="fixed left-0 right-0 top-0 z-40 flex h-[calc(4rem+env(safe-area-inset-top))] items-end justify-between px-4 pb-2 pt-[env(safe-area-inset-top)] sm:h-20 sm:px-8 sm:pb-0 sm:pt-0 pointer-events-none"
     >
       <div className="flex items-center gap-3 sm:gap-5 pointer-events-auto">
         <button
