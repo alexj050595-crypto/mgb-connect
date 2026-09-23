@@ -36,7 +36,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative z-10 w-full max-w-md rounded-[30px] border border-white/10 bg-white/[0.045] p-7 shadow-2xl backdrop-blur-2xl sm:p-9">
+    <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.045] p-5 sm:rounded-[30px] sm:p-9 shadow-2xl backdrop-blur-2xl sm:p-9">
       <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
         <ShieldCheck size={23} />
       </div>
@@ -71,7 +71,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-6">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 sm:px-6">
       <Background />
       <Suspense fallback={<div className="relative z-10 h-96 w-full max-w-md animate-pulse rounded-[30px] border border-white/10 bg-white/[0.045]" />}>
         <LoginForm />
