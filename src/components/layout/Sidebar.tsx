@@ -49,7 +49,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             animate={{ x: 0 }}
             exit={{ x: -340 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed left-0 top-0 z-50 flex h-screen max-h-screen w-[min(20rem,calc(100vw-1rem))] flex-col overflow-hidden border-r border-white/10 bg-white/5 backdrop-blur-lg"
+            className="fixed left-0 top-0 z-50 flex h-[100dvh] max-h-[100dvh] w-[min(20rem,calc(100vw-1rem))] flex-col overflow-hidden border-r border-white/10 bg-white/5 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]"
           >
             <div className="flex shrink-0 items-center justify-between px-5 py-5 sm:px-7 sm:py-7">
               <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">MGB Connect</h2>
