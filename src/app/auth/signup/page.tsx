@@ -46,9 +46,9 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-6">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 sm:px-6">
       <Background />
-      <div className="relative z-10 w-full max-w-md rounded-[30px] border border-white/10 bg-white/[0.045] p-7 shadow-2xl backdrop-blur-2xl sm:p-9">
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.045] p-5 sm:rounded-[30px] sm:p-9 shadow-2xl backdrop-blur-2xl sm:p-9">
         <Link href="/auth/login" className="inline-flex items-center gap-2 text-sm text-white/45 hover:text-white"><ArrowLeft size={16} />Zur Anmeldung</Link>
         <p className="mt-8 text-sm uppercase tracking-[0.2em] text-amber-300/75">MGB Connect</p>
         <h1 className="mt-2 text-3xl font-black text-white">Konto erstellen</h1>
