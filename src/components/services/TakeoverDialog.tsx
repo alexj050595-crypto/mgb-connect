@@ -38,13 +38,15 @@ export default function TakeoverDialog({
     >
       <div
         className="
-          w-full
+          w-[calc(100vw-1.5rem)]
+          max-h-[calc(100dvh-1.5rem)]
+          overflow-y-auto
           max-w-md
           rounded-[28px]
           border
           border-white/10
           bg-[#0b0b0b]/95
-          p-6
+          p-5
           shadow-2xl
           backdrop-blur-2xl
         "
