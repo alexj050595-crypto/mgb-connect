@@ -61,7 +61,7 @@ export default function ExchangePage() {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <Topbar sidebarOpen={sidebarOpen} onMenuClick={() => setSidebarOpen(true)} />
 
-      <section className="relative z-10 mx-auto max-w-6xl px-6 pb-12 pt-36">
+      <section className="relative z-10 mx-auto max-w-6xl px-4 pb-12 pt-28 sm:px-6 sm:pt-36">
         <Link href="/" className="mb-8 inline-flex items-center gap-2 text-white/55 transition hover:text-white">
           <ArrowLeft size={18} />
           <span>Zurück zum Dashboard</span>
@@ -69,7 +69,7 @@ export default function ExchangePage() {
 
         <div className="mb-10">
           <p className="text-sm uppercase tracking-[0.22em] text-amber-300/80">Tauschbörse</p>
-          <h1 className="mt-2 text-5xl font-black tracking-tight text-white">Offene Dienste</h1>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-5xl">Offene Dienste</h1>
           <p className="mt-3 max-w-2xl text-lg leading-8 text-white/60">
             Hier findest du Dienste, für die aktuell eine Vertretung gesucht wird. Du kannst einen offenen Dienst unabhängig von einem eigenen Tausch übernehmen.
           </p>
@@ -149,7 +149,7 @@ function ExchangeServiceCard({
   ownDemoRelease?: boolean;
 }) {
   return (
-    <div className="rounded-[28px] border border-white/10 bg-white/[0.045] p-6 backdrop-blur-2xl transition hover:border-amber-400/20 hover:bg-white/[0.06]">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 sm:rounded-[28px] sm:p-6 backdrop-blur-2xl transition hover:border-amber-400/20 hover:bg-white/[0.06]">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
