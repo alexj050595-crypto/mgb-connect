@@ -25,7 +25,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-
 /* ============================================================
    MGB CONNECT — mobile-first responsive foundation
    ============================================================ */
@@ -68,7 +67,6 @@ textarea {
     overflow-x: clip;
   }
 
-  /* All authenticated page shells use the same mobile-safe content frame. */
   main > section.relative.z-10.mx-auto {
     width: 100%;
     max-width: 100%;
@@ -94,23 +92,19 @@ textarea {
     overflow-wrap: anywhere;
   }
 
-  /* Prevent dense desktop flex rows from becoming cramped on phones. */
   main > section.relative.z-10.mx-auto .flex {
     min-width: 0;
   }
 
-  /* Give primary controls comfortable touch targets without changing desktop. */
   main > section.relative.z-10.mx-auto button,
   main > section.relative.z-10.mx-auto a.inline-flex {
     min-height: 44px;
   }
 
-  /* Data-heavy grids collapse before text becomes squeezed. */
   main > section.relative.z-10.mx-auto .grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* Search/filter controls stack naturally on narrow screens. */
   main > section.relative.z-10.mx-auto input,
   main > section.relative.z-10.mx-auto select,
   main > section.relative.z-10.mx-auto textarea {
@@ -118,7 +112,6 @@ textarea {
     max-width: 100%;
   }
 
-  /* Long service/admin rows may wrap rather than create horizontal scrolling. */
   main > section.relative.z-10.mx-auto table {
     display: block;
     width: 100%;
@@ -126,11 +119,19 @@ textarea {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Fixed dialogs stay inside the actual safe viewport. */
   [role="dialog"] {
     max-height: calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  main > section.relative.z-10.mx-auto .min-h-\[320px\] {
+    min-height: 280px;
+  }
+
+  main > section.relative.z-10.mx-auto .flex.items-start.justify-between,
+  main > section.relative.z-10.mx-auto .flex.items-center.justify-between {
+    min-width: 0;
   }
 }
 
