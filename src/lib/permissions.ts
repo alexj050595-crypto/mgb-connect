@@ -54,7 +54,7 @@ export type Permission =
   | "manage_members"
   | "manage_roles"
   | "manage_announcements"
-  | "manage_system";
+  | "manage_system"\n  | "view_lists"\n  | "manage_lists";
 
 export const permissions: Record<UserRole, Permission[]> = {
   messdiener: [],
