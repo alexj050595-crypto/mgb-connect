@@ -54,7 +54,9 @@ export type Permission =
   | "manage_members"
   | "manage_roles"
   | "manage_announcements"
-  | "manage_system"\n  | "view_lists"\n  | "manage_lists";
+  | "manage_system"
+  | "view_lists"
+  | "manage_lists";
 
 export const permissions: Record<UserRole, Permission[]> = {
   messdiener: [],
@@ -69,6 +71,7 @@ export const permissions: Record<UserRole, Permission[]> = {
     "view_team",
     "view_service_management",
     "view_statistics",
+    "view_lists",
   ],
 
   planschreiber: [
@@ -78,6 +81,7 @@ export const permissions: Record<UserRole, Permission[]> = {
     "view_statistics",
     "confirm_requests",
     "manage_schedule",
+    "view_lists",
   ],
 
   admin: [
@@ -91,6 +95,8 @@ export const permissions: Record<UserRole, Permission[]> = {
     "manage_roles",
     "manage_announcements",
     "manage_system",
+    "view_lists",
+    "manage_lists",
   ],
 };
 
