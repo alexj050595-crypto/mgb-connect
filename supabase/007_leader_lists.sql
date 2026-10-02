@@ -45,14 +45,14 @@ language sql
 stable
 security definer
 set search_path = public
-as $
+as $$
   select exists (
     select 1 from public.profiles
     where id = auth.uid()
       and role in ('leiter', 'planschreiber', 'admin')
       and active = true
   );
-$;
+$$;
 
 grant execute on function public.is_leader_or_admin() to authenticated;
 
