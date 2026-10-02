@@ -39,6 +39,23 @@ create table if not exists public.leader_list_entries (
   unique(list_id, member_id, action_id)
 );
 
+create or replace function public.is_leader_or_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid()
+      and role in ('leiter', 'planschreiber', 'admin')
+      and active = true
+  );
+$;
+
+grant execute on function public.is_leader_or_admin() to authenticated;
+
 alter table public.leader_lists enable row level security;
 alter table public.leader_list_members enable row level security;
 alter table public.leader_list_actions enable row level security;
