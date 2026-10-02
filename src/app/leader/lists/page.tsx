@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type ListRow = { id: string; title: string; description: string; active: boolean };
 type Member = { id: string; profile_id: string; display_name: string | null; sort_order: number };
-type Action = { id: string; label: string; sort_order: number };
+type Action = { id: string; label: string; points: number; sort_order: number };
 type Entry = { id: string; member_id: string; action_id: string; count: number };
 
 export default function LeaderListsPage() {
@@ -41,7 +41,7 @@ export default function LeaderListsPage() {
     const supabase = createClient();
     const [m, a, e] = await Promise.all([
       supabase.from("leader_list_members").select("id,profile_id,display_name,sort_order").eq("list_id", id).order("sort_order"),
-      supabase.from("leader_list_actions").select("id,label,sort_order").eq("list_id", id).order("sort_order"),
+      supabase.from("leader_list_actions").select("id,label,points,sort_order").eq("list_id", id).order("sort_order"),
       supabase.from("leader_list_entries").select("id,member_id,action_id,count").eq("list_id", id),
     ]);
     const firstError = m.error ?? a.error ?? e.error;
@@ -55,9 +55,9 @@ export default function LeaderListsPage() {
   useEffect(() => { void loadSelected(selectedId); }, [selectedId]);
 
   const selected = lists.find((x) => x.id === selectedId);
-  const totalFor = (memberId: string) => entries.reduce((sum, e) => sum + (e.member_id === memberId ? e.count : 0), 0);
+  const totalFor = (memberId: string) => entries.reduce((sum, e) => { const action = actions.find((a) => a.id === e.action_id); return sum + (e.member_id === memberId ? e.count * (action?.points ?? 1) : 0); }, 0);
   const getCount = (memberId: string, actionId: string) => entries.find((e) => e.member_id === memberId && e.action_id === actionId)?.count ?? 0;
-  const ranking = useMemo(() => [...members].sort((a, b) => totalFor(b.id) - totalFor(a.id)), [members, entries]);
+  const ranking = useMemo(() => [...members].sort((a, b) => totalFor(b.id) - totalFor(a.id)), [members, entries, actions]);
 
   async function addTally(memberId: string, actionId: string) {
     const supabase = createClient();
@@ -93,11 +93,46 @@ export default function LeaderListsPage() {
           <>
             <div className="mt-8 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">{lists.map((list) => <button key={list.id} onClick={() => setSelectedId(list.id)} className={list.id === selectedId ? "shrink-0 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-200" : "shrink-0 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/55"}>{list.title}</button>)}</div>
             {selected && <p className="mt-4 text-white/50">{selected.description}</p>}
-            <div className="mt-6 overflow-x-auto rounded-3xl border border-white/10 bg-white/[0.045] backdrop-blur-2xl">
-              <table className="w-full min-w-[680px] border-collapse">
-                <thead><tr className="border-b border-white/10"><th className="sticky left-0 z-10 bg-[#111]/95 px-4 py-4 text-left text-xs uppercase tracking-[0.16em] text-white/40">Person</th>{actions.map((action) => <th key={action.id} className="px-3 py-4 text-center text-xs uppercase tracking-[0.12em] text-white/40">{action.label}</th>)}<th className="px-4 py-4 text-right text-xs uppercase tracking-[0.12em] text-white/40">Gesamt</th></tr></thead>
-                <tbody>{members.map((member) => <tr key={member.id} className="border-b border-white/5 last:border-0"><td className="sticky left-0 z-10 bg-[#111]/95 px-4 py-4 font-semibold text-white">{member.display_name || "Unbenannt"}</td>{actions.map((action) => <td key={action.id} className="px-3 py-3 text-center"><div className="flex items-center justify-center gap-2"><span className="min-w-6 text-sm font-bold text-white">{getCount(member.id, action.id)}</span><button onClick={() => void addTally(member.id, action.id)} className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300 transition hover:bg-amber-400/20" aria-label={"Strich für " + member.display_name + " bei " + action.label + " hinzufügen"}><Plus size={16}/></button></div></td>)}<td className="px-4 py-4 text-right text-lg font-black text-amber-200">{totalFor(member.id)}</td></tr>)}</tbody>
-              </table>
+            <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-3 backdrop-blur-2xl sm:p-5">
+              <div className="mb-4 px-1">
+                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Punkte sammeln</p>
+                <p className="mt-1 text-sm text-white/45">Tippe bei einer Person auf einen Button. Jeder Tap wird sofort gespeichert.</p>
+              </div>
+              <div className="space-y-3">
+                {members.map((member) => {
+                  const rank = ranking.findIndex((item) => item.id === member.id) + 1;
+                  return (
+                    <div key={member.id} className="rounded-2xl border border-white/10 bg-black/10 p-3 sm:p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-sm font-black text-white/55">{rank}</div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-bold text-white">{member.display_name || "Unbenannt"}</p>
+                          <p className="text-xs text-white/35">Platz {rank}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-amber-200">{totalFor(member.id)}</p>
+                          <p className="text-[10px] uppercase tracking-wider text-white/30">Punkte</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                        {actions.map((action) => {
+                          const count = getCount(member.id, action.id);
+                          return (
+                            <button key={action.id} type="button" onClick={() => void addTally(member.id, action.id)} className="min-h-[78px] rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-left transition active:scale-[0.98] hover:border-amber-400/25 hover:bg-amber-400/[0.07]">
+                              <span className="block truncate text-sm font-semibold text-white">{action.label}</span>
+                              <span className="mt-1 flex items-end justify-between gap-2">
+                                <span className="text-xs text-white/35">+{action.points} {action.points === 1 ? "Punkt" : "Punkte"}</span>
+                                <span className="flex items-center gap-1 text-lg font-black text-amber-300"><Plus size={15}/>{count}</span>
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {members.length === 0 && <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-white/40">Noch niemand auf dieser Liste. Der Administrator kann Teilnehmer in den Einstellungen hinzufügen.</div>}
             </div>
             <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-2xl sm:p-7"><p className="text-sm uppercase tracking-[0.18em] text-white/40">Rangliste</p><div className="mt-4 space-y-2">{ranking.map((member, index) => <div key={member.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"><span className="w-8 text-sm font-bold text-amber-300">{index + 1}.</span><span className="min-w-0 flex-1 truncate font-semibold text-white">{member.display_name || "Unbenannt"}</span><span className="font-black text-white">{totalFor(member.id)}</span></div>)}</div></div>
           </>
