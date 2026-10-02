@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell, CalendarDays, Coins, Megaphone, Power, Save, Settings, Shield, Trophy, Users } from "lucide-react";
+import { ArrowLeft, Bell, CalendarDays, Coins, ListChecks, Megaphone, Power, Save, Settings, Shield, Trophy, Users } from "lucide-react";
 
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { createClient } from "@/lib/supabase/client";
 import { hasPermission } from "@/lib/permissions";
+import LeaderListSettings from "@/components/admin/LeaderListSettings";
 
 const defaultFeatures = { exchange: true, points: true, ranking: true, news: true, notifications: true, calendar: false };
 const defaultServiceRules = { autoTakeover: true, leaderReject: true, points: true };
@@ -148,7 +149,7 @@ export default function AdminSettingsPage() {
       <Section icon={<Coins size={21} />} eyebrow="Punkte" title="Punktesystem" description="Die konkreten Punktwerte pro Dienst werden weiterhin am jeweiligen Dienst gespeichert."><div className="grid gap-3 sm:grid-cols-3"><ValueCard title="Normaler Dienst" value="10 Punkte" /><ValueCard title="Sonderdienst" value="15 Punkte" /><ValueCard title="Abschluss" value="Automatisch" /></div></Section>
       <Section icon={<Bell size={21} />} eyebrow="Benachrichtigungen" title="Standard-Benachrichtigungen" description="Bestimme, welche Ereignisse grundsätzlich gemeldet werden."><div className="space-y-3"><SettingRow title="Dienst-Erinnerungen" description="Erinnerungen an bevorstehende Dienste." value={notifications.serviceReminder} onChange={() => toggleNotification("serviceReminder")} /><SettingRow title="Tauschbörse & Übernahmen" description="Änderungen an Angeboten und Übernahmen." value={notifications.exchange} onChange={() => toggleNotification("exchange")} /><SettingRow title="News" description="Neue Ankündigungen für Mitglieder." value={notifications.news} onChange={() => toggleNotification("news")} /><SettingRow title="Wichtige Mitteilungen" description="Wichtige organisatorische Informationen hervorheben." value={notifications.important} onChange={() => toggleNotification("important")} /></div></Section>
       <Section icon={<Users size={21} />} eyebrow="Organisation" title="Allgemeine Einstellungen" description="Grundlegende Werte der Gemeinschaft."><div className="grid gap-3 sm:grid-cols-2"><ValueCard title="Organisation" value="MGB Connect" /><ValueCard title="Zeitzone" value="Europe/Berlin" /><ValueCard title="Standard-Sprache" value="Deutsch" /><ValueCard title="Systemstatus" value="Aktiv" /></div></Section>
-      <Section icon={<Trophy size={21} />} eyebrow="Verwaltung" title="Weitere Bereiche" description="Die einzelnen Verwaltungsbereiche bleiben bewusst getrennt und übersichtlich."><div className="grid gap-3 sm:grid-cols-2"><AdminLink href="/admin/users" icon={<Users size={18} />} title="Benutzerverwaltung" /><AdminLink href="/admin/roles" icon={<Shield size={18} />} title="Rollen & Rechte" /><AdminLink href="/admin/announcements" icon={<Megaphone size={18} />} title="Ankündigungen" /><AdminLink href="/admin" icon={<Settings size={18} />} title="Administration" /></div></Section>
+      <Section icon={<ListChecks size={21} />} eyebrow="Listen" title="Leiter-Listen" description="Erstelle frei konfigurierbare Strichlisten. Du kannst Personen und Ereignisse festlegen; daraus entsteht automatisch eine Rangliste."><LeaderListSettings /></Section>\n      <Section icon={<Trophy size={21} />} eyebrow="Verwaltung" title="Weitere Bereiche" description="Die einzelnen Verwaltungsbereiche bleiben bewusst getrennt und übersichtlich."><div className="grid gap-3 sm:grid-cols-2"><AdminLink href="/admin/users" icon={<Users size={18} />} title="Benutzerverwaltung" /><AdminLink href="/admin/roles" icon={<Shield size={18} />} title="Rollen & Rechte" /><AdminLink href="/admin/announcements" icon={<Megaphone size={18} />} title="Ankündigungen" /><AdminLink href="/admin" icon={<Settings size={18} />} title="Administration" /></div></Section>
 
       <button type="button" onClick={() => void saveSettings()} disabled={saving || loading || demoLoading} className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-5 py-3.5 text-sm font-semibold text-amber-200 transition hover:bg-amber-400/15 disabled:opacity-40"><Save size={18} />{saving ? "Wird gespeichert..." : saved ? "Einstellungen gespeichert" : "Einstellungen speichern"}</button>
     </section>
