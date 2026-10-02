@@ -75,7 +75,6 @@ export default function LeaderListSettings() {
     if (error) { setMessage(error.message); setSaving(false); return; }
 
     const selectedSet = new Set(selectedProfiles);
-    const currentSet = new Set(members.map((member) => member.profile_id));
     const removed = members.filter((member) => !selectedSet.has(member.profile_id));
     if (removed.length) {
       const removeResult = await supabase.from("leader_list_members").delete().in("id", removed.map((member) => member.id));
