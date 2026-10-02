@@ -116,7 +116,7 @@ export default function LeaderListSettings() {
     const label = newAction.trim();
     if (!selectedId || !label) return;
     const supabase = createClient();
-    const points = Math.max(1, Math.min(100, Number.parseInt(newActionPoints, 10) || 1));
+    const points = Math.max(0.01, Math.min(1000, Number.parseFloat(newActionPoints.replace(",", ".")) || 1));
     const { error } = await supabase.from("leader_list_actions").insert({ list_id: selectedId, label, points, sort_order: actions.length });
     if (error) { setMessage(error.message); return; }
     setNewAction("");
@@ -125,7 +125,7 @@ export default function LeaderListSettings() {
   }
 
   async function updateActionPoints(id: string, value: string) {
-    const points = Math.max(1, Math.min(100, Number.parseInt(value, 10) || 1));
+    const points = Math.max(0.01, Math.min(1000, Number.parseFloat(value.replace(",", ".")) || 1));
     const supabase = createClient();
     const { error } = await supabase.from("leader_list_actions").update({ points }).eq("id", id);
     if (error) { setMessage(error.message); return; }
@@ -190,7 +190,7 @@ export default function LeaderListSettings() {
                 </div>
                 <input
                   value={String(action.points)}
-                  onChange={(e) => setActions((current) => current.map((item) => item.id === action.id ? { ...item, points: Math.max(1, Math.min(100, Number.parseInt(e.target.value.replace(/[^0-9]/g, ""), 10) || 1)) } : item))}
+                  onChange={(e) => setActions((current) => current.map((item) => item.id === action.id ? { ...item, points: Math.max(0.01, Math.min(1000, Number.parseFloat(e.target.value.replace(",", ".").replace(/[^0-9.]/g, "")) || 1)) } : item))}
                   onBlur={(e) => void updateActionPoints(action.id, e.target.value)}
                   inputMode="numeric"
                   min="1"
@@ -204,7 +204,7 @@ export default function LeaderListSettings() {
           </div>
           <div className="mt-4 grid grid-cols-[1fr_82px_44px] gap-2">
             <input value={newAction} onChange={(e) => setNewAction(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void addAction(); }} placeholder="Button, z. B. Hilfe" className="min-w-0 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-white outline-none focus:border-amber-400/40"/>
-            <input value={newActionPoints} onChange={(e) => setNewActionPoints(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" min="1" max="100" placeholder="Pkt." aria-label="Punkte pro Tap" className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-white outline-none focus:border-amber-400/40"/>
+            <input value={newActionPoints} onChange={(e) => setNewActionPoints(e.target.value.replace(",", ".").replace(/[^0-9.]/g, ""))} inputMode="decimal" min="0.01" max="1000" step="0.01" placeholder="Pkt." aria-label="Punkte pro Tap" className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-white outline-none focus:border-amber-400/40"/>
             <button onClick={() => void addAction()} className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300"><Plus size={17}/></button>
           </div>
         </div>
