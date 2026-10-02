@@ -56,6 +56,7 @@ export default function LeaderListsPage() {
 
   const selected = lists.find((x) => x.id === selectedId);
   const totalFor = (memberId: string) => entries.reduce((sum, e) => { const action = actions.find((a) => a.id === e.action_id); return sum + (e.member_id === memberId ? e.count * (action?.points ?? 1) : 0); }, 0);
+  const formatPoints = (value: number) => Number.isInteger(value) ? String(value) : value.toLocaleString("de-DE", { maximumFractionDigits: 2 });
   const getCount = (memberId: string, actionId: string) => entries.find((e) => e.member_id === memberId && e.action_id === actionId)?.count ?? 0;
   const ranking = useMemo(() => [...members].sort((a, b) => totalFor(b.id) - totalFor(a.id)), [members, entries, actions]);
 
@@ -93,46 +94,45 @@ export default function LeaderListsPage() {
           <>
             <div className="mt-8 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none]">{lists.map((list) => <button key={list.id} onClick={() => setSelectedId(list.id)} className={list.id === selectedId ? "shrink-0 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-sm font-semibold text-amber-200" : "shrink-0 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/55"}>{list.title}</button>)}</div>
             {selected && <p className="mt-4 text-white/50">{selected.description}</p>}
-            <div className="mt-6 rounded-3xl border border-white/10 bg-white/[0.045] p-3 backdrop-blur-2xl sm:p-5">
-              <div className="mb-4 px-1">
-                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Punkte sammeln</p>
-                <p className="mt-1 text-sm text-white/45">Tippe bei einer Person auf einen Button. Jeder Tap wird sofort gespeichert.</p>
+            <div className="mt-6 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] backdrop-blur-2xl">
+              <div className="border-b border-white/10 px-4 py-4 sm:px-5">
+                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Punktetabelle</p>
+                <p className="mt-1 text-sm text-white/45">Jeder Button erhöht den jeweiligen Wert sofort. Alle eingetragenen Personen bleiben sichtbar – auch mit 0 Punkten.</p>
               </div>
-              <div className="space-y-3">
-                {members.map((member) => {
-                  const rank = ranking.findIndex((item) => item.id === member.id) + 1;
-                  return (
-                    <div key={member.id} className="rounded-2xl border border-white/10 bg-black/10 p-3 sm:p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-sm font-black text-white/55">{rank}</div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-bold text-white">{member.display_name || "Unbenannt"}</p>
-                          <p className="text-xs text-white/35">Platz {rank}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-black text-amber-200">{totalFor(member.id)}</p>
-                          <p className="text-[10px] uppercase tracking-wider text-white/30">Punkte</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="sticky left-0 z-10 bg-[#111]/95 px-4 py-4 text-left text-xs uppercase tracking-[0.14em] text-white/35">Person</th>
+                      {actions.map((action) => <th key={action.id} className="px-3 py-3 text-center"><div className="text-xs font-semibold text-white/60">{action.label}</div><div className="mt-1 text-[11px] font-medium text-amber-300/70">+{formatPoints(action.points)} Pkt.</div></th>)}
+                      <th className="px-4 py-4 text-right text-xs uppercase tracking-[0.14em] text-white/35">Gesamt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {members.map((member) => (
+                      <tr key={member.id} className="border-b border-white/5 last:border-0">
+                        <td className="sticky left-0 z-10 bg-[#111]/95 px-4 py-4">
+                          <div className="font-semibold text-white">{member.display_name || "Unbenannt"}</div>
+                          <div className="mt-0.5 text-xs text-white/30">Platz {ranking.findIndex((item) => item.id === member.id) + 1}</div>
+                        </td>
                         {actions.map((action) => {
                           const count = getCount(member.id, action.id);
-                          return (
-                            <button key={action.id} type="button" onClick={() => void addTally(member.id, action.id)} className="min-h-[78px] rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-left transition active:scale-[0.98] hover:border-amber-400/25 hover:bg-amber-400/[0.07]">
-                              <span className="block truncate text-sm font-semibold text-white">{action.label}</span>
-                              <span className="mt-1 flex items-end justify-between gap-2">
-                                <span className="text-xs text-white/35">+{action.points} {action.points === 1 ? "Punkt" : "Punkte"}</span>
-                                <span className="flex items-center gap-1 text-lg font-black text-amber-300"><Plus size={15}/>{count}</span>
-                              </span>
+                          const points = count * action.points;
+                          return <td key={action.id} className="px-2 py-3 text-center">
+                            <button type="button" onClick={() => void addTally(member.id, action.id)} className="mx-auto flex min-h-[58px] min-w-[92px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2 transition active:scale-[0.97] hover:border-amber-400/30 hover:bg-amber-400/[0.08]" aria-label={"Bei " + (member.display_name || "Unbenannt") + " " + action.label + " erhöhen"}>
+                              <span className="text-lg font-black text-white">{formatPoints(points)}</span>
+                              <span className="mt-0.5 text-[11px] text-white/35">+{formatPoints(action.points)} · {count}×</span>
+                              <span className="mt-0.5 text-xs font-bold text-amber-300"><Plus size={13} className="mr-0.5 inline-block"/>Erhöhen</span>
                             </button>
-                          );
+                          </td>;
                         })}
-                      </div>
-                    </div>
-                  );
-                })}
+                        <td className="px-4 py-4 text-right"><span className="text-xl font-black text-amber-200">{formatPoints(totalFor(member.id))}</span><span className="ml-1 text-xs text-white/30">Pkt.</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              {members.length === 0 && <div className="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-white/40">Noch niemand auf dieser Liste. Der Administrator kann Teilnehmer in den Einstellungen hinzufügen.</div>}
+              {members.length === 0 && <div className="p-8 text-center text-sm text-white/40">Noch niemand auf dieser Liste. Der Administrator kann Teilnehmer in den Einstellungen hinzufügen.</div>}
             </div>
             <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.045] p-5 backdrop-blur-2xl sm:p-7"><p className="text-sm uppercase tracking-[0.18em] text-white/40">Rangliste</p><div className="mt-4 space-y-2">{ranking.map((member, index) => <div key={member.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3"><span className="w-8 text-sm font-bold text-amber-300">{index + 1}.</span><span className="min-w-0 flex-1 truncate font-semibold text-white">{member.display_name || "Unbenannt"}</span><span className="font-black text-white">{totalFor(member.id)}</span></div>)}</div></div>
           </>
