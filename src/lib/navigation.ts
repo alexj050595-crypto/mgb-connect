@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Megaphone,
   UserCog,
+  ListChecks,
 } from "lucide-react";
 
 import {
@@ -175,6 +176,15 @@ export const navigationItems: NavigationItem[] = [
       "admin",
     ],
     permission: "view_team",
+  },
+
+  {
+    href: "/leader/lists",
+    icon: ListChecks,
+    title: "Liste",
+    description: "Konfigurierbare Strich- und Ranglisten",
+    roles: ["leiter", "planschreiber", "admin"],
+    permission: "view_lists",
   },
 
   {
