@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 type Profile = { id: string; display_name: string; role: string; active: boolean };
 type ListRow = { id: string; title: string; description: string; active: boolean };
 type Member = { id: string; profile_id: string; display_name: string | null; sort_order: number };
-type Action = { id: string; label: string; sort_order: number };
+type Action = { id: string; label: string; points: number; sort_order: number };
 
 export default function LeaderListSettings() {
   const [lists, setLists] = useState<ListRow[]>([]);
@@ -18,6 +18,7 @@ export default function LeaderListSettings() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [newAction, setNewAction] = useState("");
+  const [newActionPoints, setNewActionPoints] = useState("1");
   const [selectedProfiles, setSelectedProfiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -42,7 +43,7 @@ export default function LeaderListSettings() {
     const supabase = createClient();
     const [m, a, l] = await Promise.all([
       supabase.from("leader_list_members").select("id,profile_id,display_name,sort_order").eq("list_id", id).order("sort_order"),
-      supabase.from("leader_list_actions").select("id,label,sort_order").eq("list_id", id).order("sort_order"),
+      supabase.from("leader_list_actions").select("id,label,points,sort_order").eq("list_id", id).order("sort_order"),
       supabase.from("leader_lists").select("title,description").eq("id", id).single(),
     ]);
     if (m.error || a.error || l.error) { setMessage((m.error ?? a.error ?? l.error)?.message ?? "Laden fehlgeschlagen."); return; }
@@ -63,7 +64,22 @@ export default function LeaderListSettings() {
     const supabase = createClient();
     const { data, error } = await supabase.from("leader_lists").insert({ title: cleanTitle, description: description.trim() }).select("id").single();
     if (error) setMessage(error.message);
-    else { await load(); setSelectedId(data.id); }
+    else {
+      const leaderProfiles = profiles.filter((p) => ["leiter", "planschreiber", "admin"].includes(p.role));
+      if (leaderProfiles.length) {
+        const memberResult = await supabase.from("leader_list_members").insert(
+          leaderProfiles.map((p, index) => ({
+            list_id: data.id,
+            profile_id: p.id,
+            display_name: p.display_name ?? "",
+            sort_order: index,
+          }))
+        );
+        if (memberResult.error) { setMessage(memberResult.error.message); setSaving(false); return; }
+      }
+      await load();
+      setSelectedId(data.id);
+    }
     setSaving(false);
   }
 
@@ -100,10 +116,20 @@ export default function LeaderListSettings() {
     const label = newAction.trim();
     if (!selectedId || !label) return;
     const supabase = createClient();
-    const { error } = await supabase.from("leader_list_actions").insert({ list_id: selectedId, label, sort_order: actions.length });
+    const points = Math.max(1, Math.min(100, Number.parseInt(newActionPoints, 10) || 1));
+    const { error } = await supabase.from("leader_list_actions").insert({ list_id: selectedId, label, points, sort_order: actions.length });
     if (error) { setMessage(error.message); return; }
     setNewAction("");
+    setNewActionPoints("1");
     await loadSelected(selectedId);
+  }
+
+  async function updateActionPoints(id: string, value: string) {
+    const points = Math.max(1, Math.min(100, Number.parseInt(value, 10) || 1));
+    const supabase = createClient();
+    const { error } = await supabase.from("leader_list_actions").update({ points }).eq("id", id);
+    if (error) { setMessage(error.message); return; }
+    setActions((current) => current.map((action) => action.id === id ? { ...action, points } : action));
   }
 
   async function removeAction(id: string) {
@@ -155,8 +181,32 @@ export default function LeaderListSettings() {
       {selectedId && <div className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3"><div><p className="text-sm uppercase tracking-[0.16em] text-white/35">Ereignisse</p><h3 className="mt-1 font-bold text-white">Striche auslösen</h3></div></div>
-          <div className="mt-4 flex flex-wrap gap-2">{actions.map((action) => <span key={action.id} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/75">{action.label}<button onClick={() => void removeAction(action.id)} aria-label={action.label + " löschen"} className="text-white/35 hover:text-red-300"><X size={14}/></button></span>)}</div>
-          <div className="mt-4 flex gap-2"><input value={newAction} onChange={(e) => setNewAction(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void addAction(); }} placeholder="Neues Ereignis, z. B. Hilfe" className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-white outline-none focus:border-amber-400/40"/><button onClick={() => void addAction()} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300"><Plus size={17}/></button></div>
+          <div className="mt-4 space-y-2">
+            {actions.map((action) => (
+              <div key={action.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-white">{action.label}</p>
+                  <p className="text-xs text-white/35">Punkte pro Tap</p>
+                </div>
+                <input
+                  value={String(action.points)}
+                  onChange={(e) => setActions((current) => current.map((item) => item.id === action.id ? { ...item, points: Math.max(1, Math.min(100, Number.parseInt(e.target.value.replace(/[^0-9]/g, ""), 10) || 1)) } : item))}
+                  onBlur={(e) => void updateActionPoints(action.id, e.target.value)}
+                  inputMode="numeric"
+                  min="1"
+                  max="100"
+                  aria-label={action.label + " Punkte pro Tap"}
+                  className="h-10 w-16 rounded-lg border border-white/10 bg-black/20 px-2 text-center font-bold text-white outline-none focus:border-amber-400/40"
+                />
+                <button onClick={() => void removeAction(action.id)} aria-label={action.label + " löschen"} className="flex h-9 w-9 items-center justify-center rounded-lg text-white/35 hover:bg-red-400/10 hover:text-red-300"><X size={14}/></button>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 grid grid-cols-[1fr_82px_44px] gap-2">
+            <input value={newAction} onChange={(e) => setNewAction(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") void addAction(); }} placeholder="Button, z. B. Hilfe" className="min-w-0 rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-white outline-none focus:border-amber-400/40"/>
+            <input value={newActionPoints} onChange={(e) => setNewActionPoints(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" min="1" max="100" placeholder="Pkt." aria-label="Punkte pro Tap" className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-3 text-white outline-none focus:border-amber-400/40"/>
+            <button onClick={() => void addAction()} className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-300"><Plus size={17}/></button>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
