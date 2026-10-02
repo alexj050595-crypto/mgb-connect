@@ -74,15 +74,21 @@ export default function LeaderListSettings() {
     const { error } = await supabase.from("leader_lists").update({ title: title.trim(), description: description.trim(), updated_at: new Date().toISOString() }).eq("id", selectedId);
     if (error) { setMessage(error.message); setSaving(false); return; }
 
-    await supabase.from("leader_list_members").delete().eq("list_id", selectedId);
-    if (selectedProfiles.length) {
-      const rows = selectedProfiles.map((profileId, index) => ({
-        list_id: selectedId,
-        profile_id: profileId,
-        display_name: profiles.find((p) => p.id === profileId)?.display_name ?? "",
-        sort_order: index,
-      }));
-      const memberResult = await supabase.from("leader_list_members").insert(rows);
+    const selectedSet = new Set(selectedProfiles);
+    const currentSet = new Set(members.map((member) => member.profile_id));
+    const removed = members.filter((member) => !selectedSet.has(member.profile_id));
+    if (removed.length) {
+      const removeResult = await supabase.from("leader_list_members").delete().in("id", removed.map((member) => member.id));
+      if (removeResult.error) { setMessage(removeResult.error.message); setSaving(false); return; }
+    }
+    const rows = selectedProfiles.map((profileId, index) => ({
+      list_id: selectedId,
+      profile_id: profileId,
+      display_name: profiles.find((p) => p.id === profileId)?.display_name ?? "",
+      sort_order: index,
+    }));
+    if (rows.length) {
+      const memberResult = await supabase.from("leader_list_members").upsert(rows, { onConflict: "list_id,profile_id" });
       if (memberResult.error) { setMessage(memberResult.error.message); setSaving(false); return; }
     }
     await load();
