@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell, CalendarDays, Coins, ListChecks, Megaphone, Power, Save, Settings, Shield, Trophy, Users } from "lucide-react";
+import { ArrowLeft, Bell, CalendarDays, Coins, Megaphone, Power, Save, Settings, Shield, Trophy, Users } from "lucide-react";
 
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
@@ -13,7 +13,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useDemoMode } from "@/context/DemoModeContext";
 import { createClient } from "@/lib/supabase/client";
 import { hasPermission } from "@/lib/permissions";
-import LeaderListSettings from "@/components/admin/LeaderListSettings";
 
 const defaultFeatures = { exchange: true, points: true, ranking: true, news: true, notifications: true, calendar: false };
 const defaultServiceRules = { autoTakeover: true, leaderReject: true, points: true };
