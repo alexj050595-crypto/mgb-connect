@@ -1,0 +1,29 @@
+{
+  "format": "mgb-connect-plan",
+  "schemaVersion": 1,
+  "createdAt": "2026-11-16T12:00:00.000Z",
+  "sourceFileName": "beispielplan.docx",
+  "sourceFormat": "docx",
+  "services": [
+    {
+      "title": "Sonntagsmesse",
+      "dateISO": "2026-11-22",
+      "time": "10:00",
+      "location": "Beispielkirche",
+      "meeting": "09:30 am Sakristeieingang",
+      "points": 10,
+      "leaderName": "Max Beispiel",
+      "assignedName": "Alex Muster"
+    },
+    {
+      "title": "Abendmesse",
+      "dateISO": "2026-11-25",
+      "time": "18:30",
+      "location": "Beispielkirche",
+      "meeting": "18:00",
+      "points": 10,
+      "leaderName": "Max Beispiel",
+      "assignedName": ""
+    }
+  ]
+}
