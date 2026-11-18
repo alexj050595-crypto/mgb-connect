@@ -15,6 +15,7 @@ on:
       - main
 
 permissions:
+  # Validate the current feature branch before the draft PR is considered for review.
   contents: read
 
 jobs:
