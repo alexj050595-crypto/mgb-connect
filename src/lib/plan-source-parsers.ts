@@ -124,10 +124,11 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
     if (dateISO && time) {
       if (current) appointments.push(current);
       const names = extractNames(stripKnownPlanNotes(rowText));
+      const inlineNotes = extractInlineNotes(rowText);
       const nameWords = names.flatMap((name) => name.split(/\s+/).map((part) => part.toLocaleLowerCase("de-DE")));
       const notes = row.items
         .map((item) => item.text)
-        .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text))
+        .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text) && !/^[12]\\.?$|^Advent$/i.test(text))
         .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")) && !names.some((name) => name.toLocaleLowerCase("de-DE") === text.toLocaleLowerCase("de-DE")));
       current = makeAppointment(dateISO, time, [...notes, ...inlineNotes], names);
       continue;
@@ -135,13 +136,14 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
 
     if (!current) continue;
     const names = extractNames(stripKnownPlanNotes(rowText));
+    const inlineNotes = extractInlineNotes(rowText);
     current.assignedNames = unique([...current.assignedNames, ...names]);
     const nameWords = names.flatMap((name) => name.split(/\s+/).map((part) => part.toLocaleLowerCase("de-DE")));
     const notes = row.items
       .map((item) => item.text)
-      .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text))
-      .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")));
-    current.notes = unique([...current.notes, ...notes]);
+      .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text) && !/^[12]\\.?$|^Advent$/i.test(text))
+      .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")) && !names.some((name) => name.toLocaleLowerCase("de-DE") === text.toLocaleLowerCase("de-DE")));
+    current.notes = unique([...current.notes, ...notes, ...inlineNotes]);
   }
 
   if (!appointments.length && current) appointments.push(current);
