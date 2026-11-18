@@ -1,3 +1,5 @@
+import * as XLSX from "xlsx";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import {
   DEFAULT_PLAN_SERVICE_TITLE,
   MGB_PLAN_FORMAT,
@@ -7,11 +9,6 @@ import {
 } from "@/lib/mgb-plan";
 
 type PdfTextItem = { str?: string; transform?: number[]; width?: number };
-type PdfModule = { getDocument: (options: { data: ArrayBuffer }) => { promise: Promise<{ numPages: number; getPage: (page: number) => Promise<{ getTextContent: () => Promise<{ items: unknown[] }> }> }> } };
-type XlsxModule = {
-  read: (data: ArrayBuffer, options: Record<string, unknown>) => { SheetNames: string[]; Sheets: Record<string, unknown> };
-  utils: { sheet_to_json: (sheet: unknown, options: Record<string, unknown>) => unknown[][] };
-};
 type ParseResult = { plan: MgbPlanFile; warnings: string[] };
 
 const DATE_RE = /\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b/;
@@ -49,8 +46,6 @@ function buildPlan(fileName: string, sourceFormat: "pdf" | "xlsx", appointments:
 }
 
 export async function parseXlsxPlan(file: File): Promise<ParseResult> {
-  const load = new Function("url", "return import(url)") as (url: string) => Promise<XlsxModule>;
-  const XLSX = await load("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm");
   const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) throw new Error("Die Excel-Datei enthält kein Tabellenblatt.");
@@ -85,8 +80,7 @@ export async function parseXlsxPlan(file: File): Promise<ParseResult> {
 }
 
 export async function parsePdfPlan(file: File): Promise<ParseResult> {
-  const load = new Function("url", "return import(url)") as (url: string) => Promise<PdfModule>;
-  const pdfjs = await load("https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/legacy/build/pdf.worker.mjs", import.meta.url).toString();
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
   const rows: Array<{ y: number; items: Array<{ x: number; text: string }> }> = [];
 
