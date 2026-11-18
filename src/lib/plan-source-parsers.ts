@@ -124,7 +124,7 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
       const notes = row.items
         .map((item) => item.text)
         .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text))
-        .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")));
+        .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")) && !names.some((name) => name.toLocaleLowerCase("de-DE") === text.toLocaleLowerCase("de-DE")));
       current = makeAppointment(dateISO, time, notes, names);
       continue;
     }
