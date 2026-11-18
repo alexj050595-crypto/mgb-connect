@@ -33,8 +33,8 @@ type ServiceRow = {
   assigned_to: string | null;
   taken_by: string | null;
   leader_id: string | null;
-  assigned_profile?: { display_name: string | null } | { display_name: string | null }[] | null;
-  taken_profile?: { display_name: string | null } | { display_name: string | null }[] | null;
+  assigned_profile?: { display_name: string | null; role: string } | { display_name: string | null; role: string }[] | null;
+  taken_profile?: { display_name: string | null; role: string } | { display_name: string | null; role: string }[] | null;
   leader_profile?: { display_name: string | null } | { display_name: string | null }[] | null;
 };
 
@@ -73,6 +73,8 @@ function rowToService(row: ServiceRow, userId?: string): Service {
         ? (row.excuse_reason as ExcuseReason)
         : undefined,
     ...(assignedName ? { assignedName } : {}),
+    assignedRole: assignedProfile?.role,
+    takenByRole: takenProfile?.role,
   } as Service;
 }
 
@@ -98,8 +100,8 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
 
     const table = demoMode ? "demo_services" : "services";
     const select = demoMode
-      ? "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, leader_id, assigned_profile:profiles!demo_services_assigned_to_fkey(display_name), taken_profile:profiles!demo_services_taken_by_fkey(display_name), leader_profile:profiles!demo_services_leader_id_fkey(display_name)"
-      : "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, leader_id, assigned_profile:profiles!services_assigned_to_fkey(display_name), taken_profile:profiles!services_taken_by_fkey(display_name), leader_profile:profiles!services_leader_id_fkey(display_name)";
+      ? "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, leader_id, assigned_profile:profiles!demo_services_assigned_to_fkey(display_name, role), taken_profile:profiles!demo_services_taken_by_fkey(display_name, role), leader_profile:profiles!demo_services_leader_id_fkey(display_name)"
+      : "id, title, date_iso, time, location, meeting, points, status, excuse_reason, assigned_to, taken_by, leader_id, assigned_profile:profiles!services_assigned_to_fkey(display_name, role), taken_profile:profiles!services_taken_by_fkey(display_name, role), leader_profile:profiles!services_leader_id_fkey(display_name)";
 
     const { data, error } = await supabase.from(table).select(select).order("date_iso", { ascending: true });
     setUsingSupabase(true);
