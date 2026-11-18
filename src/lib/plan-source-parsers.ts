@@ -128,7 +128,7 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
       const nameWords = names.flatMap((name) => name.split(/\s+/).map((part) => part.toLocaleLowerCase("de-DE")));
       const notes = row.items
         .map((item) => item.text)
-        .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text) && !/^[12]\\.?$|^Advent$/i.test(text))
+        .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text) && text !== "1." && text !== "2." && text.toLocaleLowerCase("de-DE") !== "advent")
         .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")) && !names.some((name) => name.toLocaleLowerCase("de-DE") === text.toLocaleLowerCase("de-DE")));
       current = makeAppointment(dateISO, time, [...notes, ...inlineNotes], names);
       continue;
@@ -141,7 +141,7 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
     const nameWords = names.flatMap((name) => name.split(/\s+/).map((part) => part.toLocaleLowerCase("de-DE")));
     const notes = row.items
       .map((item) => item.text)
-      .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text) && !/^[12]\\.?$|^Advent$/i.test(text))
+      .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text) && text !== "1." && text !== "2." && text.toLocaleLowerCase("de-DE") !== "advent")
       .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")) && !names.some((name) => name.toLocaleLowerCase("de-DE") === text.toLocaleLowerCase("de-DE")));
     current.notes = unique([...current.notes, ...notes, ...inlineNotes]);
   }
