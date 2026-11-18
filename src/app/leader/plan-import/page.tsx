@@ -96,10 +96,10 @@ export default function PlanImportPage() {
     }
   }
 
-  function updateAppointment(index: number, field: "title" | "dateISO" | "time", value: string) {
+  function updateAppointment(index: number, field: "title" | "dateISO" | "time" | "notes" | "points", value: string | number) {
     setPlan((current) => current ? {
       ...current,
-      appointments: current.appointments.map((appointment, i) => i === index ? { ...appointment, [field]: value } : appointment),
+      appointments: current.appointments.map((appointment, i) => i === index ? { ...appointment, [field]: field === "notes" && typeof value === "string" ? value.split(/[·\\n]/).map((note) => note.trim()).filter(Boolean) : value } : appointment),
     } : current);
   }
 
@@ -148,7 +148,7 @@ export default function PlanImportPage() {
           location: "",
           leaderId: null,
           meeting: appointment.notes.join(" · "),
-          points: 0,
+          points: appointment.points ?? 0,
         };
         if (!appointment.assignedNames.length) return [{ ...base, assignedTo: null }];
         return appointment.assignedNames.map((name) => ({
@@ -213,12 +213,12 @@ export default function PlanImportPage() {
             <div className="mt-4 space-y-3">
               {plan.appointments.map((appointment, index) => (
                 <article key={index} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
-                  <div className="grid gap-3 sm:grid-cols-[1fr_170px_120px]">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_170px_120px_110px]">
                     <label className="text-xs text-white/40">Titel<input value={appointment.title} onChange={(event) => updateAppointment(index, "title", event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
                     <label className="text-xs text-white/40">Datum<input type="date" value={appointment.dateISO} onChange={(event) => updateAppointment(index, "dateISO", event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
-                    <label className="text-xs text-white/40">Uhrzeit<input type="time" value={appointment.time} onChange={(event) => updateAppointment(index, "time", event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
+                    <label className="text-xs text-white/40">Uhrzeit<input type="time" value={appointment.time} onChange={(event) => updateAppointment(index, "time", event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label><label className="text-xs text-white/40">Punkte<input type="number" min={0} max={1000} value={appointment.points ?? 0} onChange={(event) => updateAppointment(index, "points", Number(event.target.value))} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
                   </div>
-                  {appointment.notes.length > 0 && <p className="mt-3 text-sm text-amber-200/75">Hinweise: {appointment.notes.join(" · ")}</p>}
+                  <label className="mt-3 block text-xs text-white/40">Hinweise<textarea value={appointment.notes.join(" · ")} onChange={(event) => updateAppointment(index, "notes", event.target.value)} rows={2} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
                   <p className="mt-2 text-xs text-white/35">{appointment.assignedNames.length ? appointment.assignedNames.join(" · ") : "Kein Name zugewiesen – wird als offener Dienst angelegt."}</p>
                 </article>
               ))}
