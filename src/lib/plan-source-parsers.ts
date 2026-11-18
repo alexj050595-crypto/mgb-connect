@@ -8,15 +8,19 @@ import {
   type MgbPlanFile,
 } from "@/lib/mgb-plan";
 
-type PdfTextItem = { str?: string; transform?: number[]; width?: number };
+type PdfTextItem = { str?: string; transform?: number[] };
 type ParseResult = { plan: MgbPlanFile; warnings: string[] };
 
 const DATE_RE = /\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b/;
 const TIME_RE = /\b([01]?\d|2[0-3]):([0-5]\d)\b/;
 const ABBREV_RE = /^[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)*\s+[\p{L}]\.?$/u;
+const NAME_GLOBAL_RE = /[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)*\s+[\p{L}]\.?/gu;
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+function unique(values: string[]): string[] {
+  return [...new Set(values.map(clean).filter(Boolean))];
 }
 function toISO(value: string): string | null {
   const match = value.match(DATE_RE);
@@ -34,14 +38,13 @@ function isWeekday(value: string): boolean {
   return /^(mo|di|mi|do|fr|sa|so)(ntag|nstag|ttwoch|nnerstag|eitag|mstag|nntag)?\.?$/i.test(value);
 }
 function extractNames(value: string): string[] {
-  const matches = value.match(/[\\p{L}][\\p{L}'’-]*(?:\\s+[\\p{L}][\\p{L}'’-]*)*\\s+[\\p{L}]\\.?/gu) ?? [];
-  return unique(matches.filter((match) => ABBREV_RE.test(match)));
+  return unique((value.match(NAME_GLOBAL_RE) ?? []).filter((name) => ABBREV_RE.test(name)));
 }
-function unique(values: string[]): string[] {
-  return [...new Set(values.map(clean).filter(Boolean))];
+function makeAppointment(dateISO: string, time: string, notes: string[] = [], assignedNames: string[] = []): MgbPlanAppointment {
+  return { title: DEFAULT_PLAN_SERVICE_TITLE, dateISO, time, notes: unique(notes), assignedNames: unique(assignedNames), points: 0 };
 }
 function buildPlan(fileName: string, sourceFormat: "pdf" | "xlsx", appointments: MgbPlanAppointment[], warnings: string[]): ParseResult {
-  if (!appointments.length) throw new Error("Es wurden keine Termine erkannt. Bitte prüfe, ob die Datei Text enthält und das erwartete Planlayout verwendet.");
+  if (!appointments.length) throw new Error("Es wurden keine Termine erkannt. Bitte prüfe, ob die Datei das erwartete Planlayout verwendet.");
   if (appointments.length > 500) throw new Error("Die Datei enthält mehr als 500 Termine. Bitte teile den Plan auf.");
   return {
     plan: { format: MGB_PLAN_FORMAT, schemaVersion: MGB_PLAN_VERSION, createdAt: new Date().toISOString(), sourceFileName: fileName, sourceFormat, appointments },
@@ -49,13 +52,13 @@ function buildPlan(fileName: string, sourceFormat: "pdf" | "xlsx", appointments:
   };
 }
 
+/** Parses the known MGB spreadsheet layout: date/time in A:C, names in D:G. */
 export async function parseXlsxPlan(file: File): Promise<ParseResult> {
   const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) throw new Error("Die Excel-Datei enthält kein Tabellenblatt.");
-  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" });
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" }) as unknown[][];
   const appointments: MgbPlanAppointment[] = [];
-  const warnings: string[] = [];
   let current: MgbPlanAppointment | null = null;
 
   for (const row of rows) {
@@ -67,22 +70,22 @@ export async function parseXlsxPlan(file: File): Promise<ParseResult> {
     if (dateISO && time) {
       if (current) appointments.push(current);
       const notes = cells.slice(0, 3).filter((cell) => cell && !DATE_RE.test(cell) && !TIME_RE.test(cell) && !isWeekday(cell));
-      current = { title: DEFAULT_PLAN_SERVICE_TITLE, dateISO, time, notes: unique(notes), assignedNames: [], points: 0 };
+      current = makeAppointment(dateISO, time, notes);
     } else if (current) {
-      const rowNotes = cells.slice(0, 3).filter((cell) => cell && !DATE_RE.test(cell) && !TIME_RE.test(cell) && !isWeekday(cell));
-      current.notes = unique([...current.notes, ...rowNotes]);
+      const notes = cells.slice(0, 3).filter((cell) => cell && !DATE_RE.test(cell) && !TIME_RE.test(cell) && !isWeekday(cell));
+      current.notes = unique([...current.notes, ...notes]);
     }
 
     if (current) {
-      const names = cells.slice(3, 7).filter((cell) => cell && !isWeekday(cell));
+      const names = cells.slice(3, 7).flatMap((cell) => cell.split(/[\r\n;]+/).map(clean)).filter((cell) => cell && !isWeekday(cell));
       current.assignedNames = unique([...current.assignedNames, ...names]);
     }
   }
   if (current) appointments.push(current);
-  if (!appointments.length) warnings.push("Keine Datums-/Uhrzeitzeilen im erwarteten Bereich A:C erkannt.");
-  return buildPlan(file.name, "xlsx", appointments, warnings);
+  return buildPlan(file.name, "xlsx", appointments, []);
 }
 
+/** Parses selectable text in a PDF. Image-only/scanned PDFs require OCR and are rejected clearly. */
 export async function parsePdfPlan(file: File): Promise<ParseResult> {
   pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/legacy/build/pdf.worker.mjs", import.meta.url).toString();
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
@@ -104,41 +107,40 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
 
   rows.sort((a, b) => b.y - a.y);
   const appointments: MgbPlanAppointment[] = [];
-  const warnings: string[] = [];
   let current: MgbPlanAppointment | null = null;
 
   for (const row of rows) {
     row.items.sort((a, b) => a.x - b.x);
-    const allText = row.items.map((item) => item.text).join(" ");
-    const dateISO = toISO(allText);
-    const time = normalizeTime(allText);
+    const rowText = row.items.map((item) => item.text).join(" ");
+    const dateISO = toISO(rowText);
+    const time = normalizeTime(rowText);
 
     if (dateISO && time) {
       if (current) appointments.push(current);
-      const notes: string[] = [];
-      const assignedNames: string[] = [];
-      for (const item of row.items) {
-        if (ABBREV_RE.test(item.text)) assignedNames.push(item.text);
-        else if (!DATE_RE.test(item.text) && !TIME_RE.test(item.text) && !isWeekday(item.text)) notes.push(item.text);
-      }
-      current = { title: DEFAULT_PLAN_SERVICE_TITLE, dateISO, time, notes: unique(notes), assignedNames: unique(assignedNames), points: 0 };
+      const names = extractNames(rowText);
+      const nameWords = names.flatMap((name) => name.split(/\s+/).map((part) => part.toLocaleLowerCase("de-DE")));
+      const notes = row.items
+        .map((item) => item.text)
+        .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text))
+        .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")));
+      current = makeAppointment(dateISO, time, notes, names);
       continue;
     }
 
     if (!current) continue;
-    for (const item of row.items) {
-      if (ABBREV_RE.test(item.text)) current.assignedNames = unique([...current.assignedNames, item.text]);
-      else if (!DATE_RE.test(item.text) && !TIME_RE.test(item.text) && !isWeekday(item.text)) {
-        current.notes = unique([...current.notes, item.text]);
-      }
+    const names = extractNames(rowText);
+    current.assignedNames = unique([...current.assignedNames, ...names]);
+    if (!names.length) {
+      const notes = row.items.map((item) => item.text).filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text));
+      current.notes = unique([...current.notes, ...notes]);
     }
   }
-  if (current) appointments.push(current);
 
+  if (!appointments.length && current) appointments.push(current);
   if (!appointments.length) {
-    throw new Error("Im PDF wurde kein auslesbarer Termin mit Datum und Uhrzeit gefunden. Falls es ein Scan ist, wird OCR benötigt; diese wird noch nicht unterstützt.");
+    throw new Error("Im PDF wurde kein auslesbarer Termin mit Datum und Uhrzeit gefunden. Bei einem Scan ohne Textebene wird OCR benötigt; diese wird derzeit nicht unterstützt.");
   }
-  if (rows.length === 0) warnings.push("Das PDF enthält keine auslesbare Textebene.");
-  else warnings.push("Bitte kontrolliere die PDF-Vorschau besonders sorgfältig: handschriftliche Einträge und ungewöhnliche Kürzelformate können nicht sicher erkannt werden.");
-  return buildPlan(file.name, "pdf", appointments, warnings);
+  return buildPlan(file.name, "pdf", appointments, [
+    "PDF-Texterkennung: Bitte kontrolliere die Vorschau besonders sorgfältig. Handschriftliche Einträge und ungewöhnliche Kürzelformate können fehlen.",
+  ]);
 }
