@@ -9,6 +9,7 @@ import Topbar from "@/components/layout/Topbar";
 import { useAuth } from "@/context/AuthContext";
 import { useRole } from "@/context/RoleContext";
 import { useDemoMode } from "@/context/DemoModeContext";
+import { useServices } from "@/context/ServiceContext";
 import {
   decodeMgbPlan,
   encodeMgbPlan,
@@ -26,6 +27,7 @@ type Selection = { profileId: string; confirmed: boolean; existing: boolean };
 
 export default function PlanImportPage() {
   const { user } = useAuth();
+  const { refreshServices } = useServices();
   const { hasPermission } = useRole();
   const { enabled: demoMode, loading: demoLoading } = useDemoMode();
   const supabase = useMemo(() => createClient(), []);
@@ -199,6 +201,7 @@ export default function PlanImportPage() {
         p_demo: demoMode,
       });
       if (importError) throw importError;
+      await refreshServices();
       setMessage(data + " Dienste wurden " + (demoMode ? "im Demo-Modus" : "in der echten Datenwelt") + " importiert. Die Namenszuordnungen wurden gespeichert.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Der Import ist fehlgeschlagen.");
