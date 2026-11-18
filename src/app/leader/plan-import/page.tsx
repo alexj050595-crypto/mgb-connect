@@ -224,9 +224,9 @@ export default function PlanImportPage() {
 
         <label className="mt-6 flex cursor-pointer flex-col items-center rounded-3xl border border-dashed border-white/15 bg-white/[0.035] px-6 py-10 text-center transition hover:border-amber-300/30 hover:bg-white/[0.055]">
           <FileUp size={30} className="text-amber-300" />
-          <span className="mt-4 font-semibold text-white">.mgb-Datei auswählen</span>
-          <span className="mt-1 text-sm text-white/40">Planformat MGB Connect · Version 2</span>
-          <input type="file" accept=".mgb,application/json" onChange={onFileChange} className="sr-only" />
+          <span className="mt-4 font-semibold text-white">PDF-, Excel- oder .mgb-Datei auswählen</span>
+          <span className="mt-1 text-sm text-white/40">PDF · XLSX · XLS · MGB · maximal 20 MB</span>
+          <input type="file" accept=".pdf,.xlsx,.xls,.mgb,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/json" onChange={onFileChange} className="sr-only" />
         </label>
 
         {error && <p role="alert" className="mt-5 rounded-2xl border border-red-400/20 bg-red-400/[0.06] p-4 text-sm text-red-200">{error}</p>}
