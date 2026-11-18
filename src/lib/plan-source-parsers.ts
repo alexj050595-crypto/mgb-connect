@@ -132,10 +132,12 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
     if (!current) continue;
     const names = extractNames(stripKnownPlanNotes(rowText));
     current.assignedNames = unique([...current.assignedNames, ...names]);
-    if (!names.length) {
-      const notes = row.items.map((item) => item.text).filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text));
-      current.notes = unique([...current.notes, ...notes]);
-    }
+    const nameWords = names.flatMap((name) => name.split(/\s+/).map((part) => part.toLocaleLowerCase("de-DE")));
+    const notes = row.items
+      .map((item) => item.text)
+      .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text))
+      .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")));
+    current.notes = unique([...current.notes, ...notes]);
   }
 
   if (!appointments.length && current) appointments.push(current);
