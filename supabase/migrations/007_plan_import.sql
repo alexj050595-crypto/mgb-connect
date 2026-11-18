@@ -80,7 +80,7 @@ begin
     end if;
 
     title_value := nullif(trim(item ->> 'title'), '');
-    if coalesce(item ->> 'dateISO', '') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2} then
+    if coalesce(item ->> 'dateISO', '') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
       raise exception 'Ungültiges Datum im Import.';
     end if;
     date_value := (item ->> 'dateISO')::date;
