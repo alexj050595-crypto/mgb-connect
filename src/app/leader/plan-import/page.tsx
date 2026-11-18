@@ -175,7 +175,8 @@ export default function PlanImportPage() {
         if (mappingError) throw mappingError;
       }
 
-      const services: Array<{ title: string; dateISO: string; time: string; location: string; leaderId: null; meeting: string; points: number; assignedTo: string | null }> = plan.appointments.flatMap((appointment) => {
+      const services: Array<{ title: string; dateISO: string; time: string; location: string; leaderId: null; meeting: string; points: number; assignedTo: string | null }> = [];
+      for (const appointment of plan.appointments) {
         const base = {
           title: appointment.title,
           dateISO: appointment.dateISO,
@@ -185,12 +186,14 @@ export default function PlanImportPage() {
           meeting: appointment.notes.join(" · "),
           points: appointment.points ?? 0,
         };
-        if (!appointment.assignedNames.length) return [{ ...base, assignedTo: null }];
-        return appointment.assignedNames.map((name) => ({
-          ...base,
-          assignedTo: selections[normalizePlanAbbreviation(name)].profileId,
-        }));
-      });
+        if (!appointment.assignedNames.length) {
+          services.push({ ...base, assignedTo: null });
+        } else {
+          for (const name of appointment.assignedNames) {
+            services.push({ ...base, assignedTo: selections[normalizePlanAbbreviation(name)].profileId });
+          }
+        }
+      }
       const { data, error: importError } = await supabase.rpc("import_plan_services", {
         p_services: services,
         p_demo: demoMode,
