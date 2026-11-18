@@ -62,6 +62,9 @@ begin
     raise exception 'Keine Berechtigung zum Importieren.';
   end if;
 
+  -- Serialize imports so two simultaneous requests cannot pass the duplicate check together.
+  perform pg_advisory_xact_lock(hashtext('mgb_connect_plan_import')::bigint);
+
   -- Prevent a request prepared in one data world from being written into the other.
   if p_demo is distinct from public.is_demo_mode() then
     raise exception 'Der Demo-Modus hat sich geändert. Bitte erneut laden.';
