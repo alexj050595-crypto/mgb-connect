@@ -67,10 +67,10 @@ begin
     raise exception 'Der Demo-Modus hat sich geändert. Bitte erneut laden.';
   end if;
 
-  if p_services is null
-     or jsonb_typeof(p_services) <> 'array'
-     or jsonb_array_length(p_services) < 1
-     or jsonb_array_length(p_services) > 500 then
+  if p_services is null or jsonb_typeof(p_services) is distinct from 'array' then
+    raise exception 'Der Import muss eine Liste von Diensteinträgen enthalten.';
+  end if;
+  if jsonb_array_length(p_services) < 1 or jsonb_array_length(p_services) > 500 then
     raise exception 'Der Import muss zwischen 1 und 500 Diensteinträge enthalten.';
   end if;
 
@@ -97,7 +97,7 @@ begin
     if time_value !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' then
       raise exception 'Ungültige Uhrzeit im Import.';
     end if;
-    if char_length(location_value) > 160 or char_length(meeting_value) > 1000 then
+    if char_length(location_value) > 160 or char_length(meeting_value) > 10000 then
       raise exception 'Ort oder Treffpunkt/Hinweis ist zu lang.';
     end if;
     if points_value < 0 or points_value > 1000 then
