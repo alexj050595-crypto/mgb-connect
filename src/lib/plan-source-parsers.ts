@@ -39,7 +39,11 @@ function isWeekday(value: string): boolean {
 }
 function stripKnownPlanNotes(value: string): string {
   return value.replace(/\b[12]\.\s*Advent\b/gi, " ");
-}\nfunction extractInlineNotes(value: string): string[] {\n  return unique(value.match(/\\b[12]\\.\\s*Advent\\b/gi) ?? []);\n}\nfunction extractNames(value: string): string[] {
+}
+function extractInlineNotes(value: string): string[] {
+  return unique(value.match(/\b[12]\.\s*Advent\b/gi) ?? []);
+}
+function extractNames(value: string): string[] {
   return unique((value.match(NAME_GLOBAL_RE) ?? []).filter((name) => ABBREV_RE.test(name)));
 }
 function makeAppointment(dateISO: string, time: string, notes: string[] = [], assignedNames: string[] = []): MgbPlanAppointment {
