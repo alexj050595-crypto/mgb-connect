@@ -32,9 +32,9 @@ type ServiceRow = {
   assigned_to: string | null;
   taken_by: string | null;
   leader_id: string | null;
-  assigned_profile?: { display_name: string | null } | null;
-  taken_profile?: { display_name: string | null } | null;
-  leader_profile?: { display_name: string | null } | null;
+  assigned_profile?: { display_name: string | null } | { display_name: string | null }[] | null;
+  taken_profile?: { display_name: string | null } | { display_name: string | null }[] | null;
+  leader_profile?: { display_name: string | null } | { display_name: string | null }[] | null;
 };
 
 const ServiceContext = createContext<ServiceContextType | null>(null);
@@ -47,7 +47,10 @@ function rowToService(row: ServiceRow, userId?: string): Service {
     year: "numeric",
   });
 
-  const assignedName = row.assigned_profile?.display_name ?? (row.assigned_to === userId ? "Du" : "");
+  const assignedProfile = Array.isArray(row.assigned_profile) ? row.assigned_profile[0] : row.assigned_profile;
+  const takenProfile = Array.isArray(row.taken_profile) ? row.taken_profile[0] : row.taken_profile;
+  const leaderProfile = Array.isArray(row.leader_profile) ? row.leader_profile[0] : row.leader_profile;
+  const assignedName = assignedProfile?.display_name ?? (row.assigned_to === userId ? "Du" : "");
 
   return {
     id: row.id,
@@ -57,13 +60,13 @@ function rowToService(row: ServiceRow, userId?: string): Service {
     time: row.time,
     church: row.location,
     location: row.location,
-    leader: row.leader_profile?.display_name ?? "",
+    leader: leaderProfile?.display_name ?? "",
     meeting: row.meeting,
     points: row.points,
     status: row.status,
     assignedTo: row.assigned_to ?? undefined,
     takenById: row.taken_by ?? undefined,
-    takenBy: row.taken_profile?.display_name ?? (row.taken_by ? "Anderer Messdiener" : undefined),
+    takenBy: takenProfile?.display_name ?? (row.taken_by ? "Anderer Messdiener" : undefined),
     excuseReason:
       row.excuse_reason && ["Krankheit", "Schule", "Familie", "Urlaub", "Sonstiges"].includes(row.excuse_reason)
         ? (row.excuse_reason as ExcuseReason)
