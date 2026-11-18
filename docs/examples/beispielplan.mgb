@@ -1,29 +1,23 @@
 {
   "format": "mgb-connect-plan",
-  "schemaVersion": 1,
-  "createdAt": "2026-11-16T12:00:00.000Z",
-  "sourceFileName": "beispielplan.docx",
-  "sourceFormat": "docx",
-  "services": [
+  "schemaVersion": 2,
+  "createdAt": "2026-11-18T18:00:00.000Z",
+  "sourceFileName": "messdienerplan.xlsx",
+  "sourceFormat": "xlsx",
+  "appointments": [
     {
-      "title": "Sonntagsmesse",
+      "title": "Messdienerdienst",
       "dateISO": "2026-11-22",
       "time": "10:00",
-      "location": "Beispielkirche",
-      "meeting": "09:30 am Sakristeieingang",
-      "points": 10,
-      "leaderName": "Max Beispiel",
-      "assignedName": "Alex Muster"
+      "notes": ["Leiterrunde", "Medinachmittag"],
+      "assignedNames": []
     },
     {
-      "title": "Abendmesse",
-      "dateISO": "2026-11-25",
-      "time": "18:30",
-      "location": "Beispielkirche",
-      "meeting": "18:00",
-      "points": 10,
-      "leaderName": "Max Beispiel",
-      "assignedName": ""
+      "title": "Messdienerdienst",
+      "dateISO": "2026-11-29",
+      "time": "11:30",
+      "notes": ["1. Advent"],
+      "assignedNames": ["Beispiel A.", "Beispiel B."]
     }
   ]
 }
