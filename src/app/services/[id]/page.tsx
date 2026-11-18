@@ -11,6 +11,7 @@ import {
   RefreshCcw,
   CircleCheck,
   AlertCircle,
+  Users,
 } from "lucide-react";
 
 import Background from "@/components/layout/Background";
@@ -25,6 +26,7 @@ import type {
   ServiceStatus,
   ExcuseReason,
 } from "@/data/services";
+import { isLeaderRole } from "@/lib/permissions";
 
 type ServicePageProps = {
   params: Promise<{
@@ -43,6 +45,7 @@ export default function ServiceDetailPage({
     getService,
     requestExchange,
     excuseService,
+    services,
   } = useServices();
 
   const { id } = React.use(params);
@@ -162,6 +165,15 @@ export default function ServiceDetailPage({
   }
 
   const status = service.status;
+  const servingPeople = services
+    .filter((entry) => entry.dateISO === service.dateISO && entry.time === service.time && entry.title === service.title && entry.location === service.location && entry.meeting === service.meeting && entry.status !== "excused" && (entry.assignedTo || entry.takenById))
+    .map((entry) => ({
+      id: entry.takenById && entry.status === "taken_over" ? entry.takenById : entry.assignedTo ?? entry.id,
+      name: entry.status === "taken_over" && entry.takenBy ? entry.takenBy : entry.assignedName ?? "Name nicht verfügbar",
+      role: entry.status === "taken_over" ? entry.takenByRole ?? entry.assignedRole : entry.assignedRole,
+    }))
+    .filter((person, index, all) => all.findIndex((candidate) => candidate.id === person.id) === index)
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
 
   const isScheduled = status === "scheduled";
   const isExchangeRequested =
@@ -315,6 +327,25 @@ export default function ServiceDetailPage({
               value={`${service.points} Punkte`}
             />
           </div>
+
+          <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div><p className="text-sm uppercase tracking-[0.18em] text-amber-300/80">Team</p><h2 className="mt-1 text-xl font-bold text-white">Wer dient mit?</h2></div>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/55">{servingPeople.length} Personen</span>
+            </div>
+            {servingPeople.length ? (
+              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                {servingPeople.map((person) => {
+                  const leader = person.role ? isLeaderRole(person.role as "messdiener" | "leiter" | "planschreiber" | "admin") : false;
+                  return <li key={person.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/15 px-4 py-3">
+                    <span className="min-w-0 truncate text-sm font-medium text-white">{person.name}</span>
+                    <span className={"shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold " + (leader ? "border-amber-300/20 bg-amber-300/10 text-amber-200" : "border-white/10 bg-white/5 text-white/45")}>{leader ? "Leiter" : "Messdiener"}</span>
+                  </li>;
+                })}
+              </ul>
+            ) : <p className="mt-3 text-sm text-white/40">Für diesen Termin sind aktuell keine weiteren Personen eingetragen.</p>}
+            <p className="mt-3 text-xs text-white/30">Die Liste zeigt alle Personen, die für denselben Termin eingeteilt sind. Planschreiber und Admins werden dabei ebenfalls als Leiter angezeigt.</p>
+          </section>
 
           <StatusPanel
             status={status}
