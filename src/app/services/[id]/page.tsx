@@ -11,7 +11,6 @@ import {
   RefreshCcw,
   CircleCheck,
   AlertCircle,
-  Users,
 } from "lucide-react";
 
 import Background from "@/components/layout/Background";
