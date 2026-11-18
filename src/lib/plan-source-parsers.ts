@@ -13,8 +13,8 @@ type ParseResult = { plan: MgbPlanFile; warnings: string[] };
 
 const DATE_RE = /\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b/;
 const TIME_RE = /\b([01]?\d|2[0-3]):([0-5]\d)\b/;
-const ABBREV_RE = /^[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)*\s+[\p{L}]\.?$/u;
-const NAME_GLOBAL_RE = /[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)*\s+[\p{L}]\.?/gu;
+const ABBREV_RE = /^[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)*\s+[\p{L}]{1,3}\.?$/u;
+const NAME_GLOBAL_RE = /[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)*\s+[\p{L}]{1,3}\.?/gu;
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
