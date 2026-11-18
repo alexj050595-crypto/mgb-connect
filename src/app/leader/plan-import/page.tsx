@@ -27,7 +27,7 @@ type Selection = { profileId: string; confirmed: boolean; existing: boolean };
 export default function PlanImportPage() {
   const { user } = useAuth();
   const { hasPermission } = useRole();
-  const { enabled: demoMode } = useDemoMode();
+  const { enabled: demoMode, loading: demoLoading } = useDemoMode();
   const supabase = useMemo(() => createClient(), []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [plan, setPlan] = useState<MgbPlanFile | null>(null);
@@ -291,7 +291,7 @@ export default function PlanImportPage() {
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button onClick={downloadPlan} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/70"><Download size={16} />.mgb herunterladen</button>
-              <button onClick={importPlan} disabled={busy || !loaded || unresolved.length > 0} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-6 py-3 text-sm font-semibold text-amber-200 disabled:cursor-not-allowed disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin" /> : <Upload size={17} />}{busy ? "Import läuft…" : unresolved.length ? unresolved.length + " Zuordnungen offen" : "Plan in MGB Connect importieren"}</button>
+              <button onClick={importPlan} disabled={busy || demoLoading || !loaded || unresolved.length > 0} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-6 py-3 text-sm font-semibold text-amber-200 disabled:cursor-not-allowed disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin" /> : <Upload size={17} />}{busy ? "Import läuft…" : demoLoading ? "Datenmodus wird geprüft…" : unresolved.length ? unresolved.length + " Zuordnungen offen" : "Plan in MGB Connect importieren"}</button>
             </div>
           </>
         )}
