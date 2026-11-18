@@ -1,7 +1,7 @@
--- Allow active planners to see active member profiles for plan import
--- and persistent name-mapping administration. No profile data is writable here.
-
+-- Active members need to see the names and roles of people serving
+-- alongside them. The profiles table contains only in-app profile metadata.
 drop policy if exists "planners can read profiles" on public.profiles;
-create policy "planners can read profiles"
+drop policy if exists "members can read active profile summaries" on public.profiles;
+create policy "members can read active profile summaries"
 on public.profiles for select
-using (public.is_admin_or_planner());
+using (auth.uid() is not null and active = true);
