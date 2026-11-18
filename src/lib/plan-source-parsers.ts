@@ -37,7 +37,7 @@ function normalizeTime(value: string): string | null {
 function isWeekday(value: string): boolean {
   return /^(mo|di|mi|do|fr|sa|so)(ntag|nstag|ttwoch|nnerstag|eitag|mstag|nntag)?\.?$/i.test(value);
 }
-function extractNames(value: string): string[] {
+function stripKnownPlanNotes(value: string): string {\n  return value.replace(/\\b[12]\\.\\s*Advent\\b/gi, " ");\n}\nfunction extractNames(value: string): string[] {
   return unique((value.match(NAME_GLOBAL_RE) ?? []).filter((name) => ABBREV_RE.test(name)));
 }
 function makeAppointment(dateISO: string, time: string, notes: string[] = [], assignedNames: string[] = []): MgbPlanAppointment {
@@ -117,7 +117,7 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
 
     if (dateISO && time) {
       if (current) appointments.push(current);
-      const names = extractNames(rowText);
+      const names = extractNames(stripKnownPlanNotes(rowText));
       const nameWords = names.flatMap((name) => name.split(/\s+/).map((part) => part.toLocaleLowerCase("de-DE")));
       const notes = row.items
         .map((item) => item.text)
