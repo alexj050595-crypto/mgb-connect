@@ -13,8 +13,8 @@ type ParseResult = { plan: MgbPlanFile; warnings: string[] };
 
 const DATE_RE = /\b(\d{1,2})\.(\d{1,2})\.(\d{4})\b/;
 const TIME_RE = /\b([01]?\d|2[0-3]):([0-5]\d)\b/;
-const ABBREV_RE = /^[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)*\s+[\p{L}]{1,3}\.?$/u;
-const NAME_GLOBAL_RE = /[\p{L}][\p{L}'’-]*(?:\s+[\p{L}][\p{L}'’-]*)*\s+[\p{L}]{1,3}\.?/gu;
+const ABBREV_RE = /^[\\p{L}][\\p{L}'’-]*\\s+[\\p{L}]{1,3}\\.?$/u;
+const NAME_GLOBAL_RE = /[\\p{L}][\\p{L}'’-]*\\s+[\\p{L}]{1,3}\\.?/gu;
 
 function clean(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
@@ -94,7 +94,7 @@ export async function parseXlsxPlan(file: File): Promise<ParseResult> {
 export async function parsePdfPlan(file: File): Promise<ParseResult> {
   pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/legacy/build/pdf.worker.mjs", import.meta.url).toString();
   const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
-  const rows: Array<{ y: number; items: Array<{ x: number; text: string }> }> = [];
+  const rows: Array<{ page: number; y: number; items: Array<{ x: number; text: string }> }> = [];
 
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     const page = await pdf.getPage(pageNumber);
@@ -104,13 +104,13 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
       if (!item.str?.trim() || !item.transform) continue;
       const x = item.transform[4] ?? 0;
       const y = item.transform[5] ?? 0;
-      let row = rows.find((candidate) => Math.abs(candidate.y - y) < 2.5);
-      if (!row) { row = { y, items: [] }; rows.push(row); }
+      let row = rows.find((candidate) => candidate.page === pageNumber && Math.abs(candidate.y - y) < 2.5);
+      if (!row) { row = { page: pageNumber, y, items: [] }; rows.push(row); }
       row.items.push({ x, text: clean(item.str) });
     }
   }
 
-  rows.sort((a, b) => b.y - a.y);
+  rows.sort((a, b) => a.page - b.page || b.y - a.y);
   const appointments: MgbPlanAppointment[] = [];
   let current: MgbPlanAppointment | null = null;
 
@@ -145,11 +145,11 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
     current.notes = unique([...current.notes, ...notes, ...inlineNotes]);
   }
 
-  if (!appointments.length && current) appointments.push(current);
+  if (current) appointments.push(current);
   if (!appointments.length) {
     throw new Error("Im PDF wurde kein auslesbarer Termin mit Datum und Uhrzeit gefunden. Bei einem Scan ohne Textebene wird OCR benötigt; diese wird derzeit nicht unterstützt.");
   }
   return buildPlan(file.name, "pdf", appointments, [
-    "PDF-Texterkennung: Bitte kontrolliere die Vorschau besonders sorgfältig. Handschriftliche Einträge und ungewöhnliche Kürzelformate können fehlen.",
+    `PDF-Texterkennung: ${appointments.length} Termine und ${appointments.reduce((count, appointment) => count + appointment.assignedNames.length, 0)} Namenseinträge erkannt. Bitte kontrolliere die Vorschau besonders sorgfältig; Handschrift kann nicht ausgelesen werden.`,
   ]);
 }
