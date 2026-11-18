@@ -69,13 +69,13 @@ export async function parseXlsxPlan(file: File): Promise<ParseResult> {
 
   for (const row of rows) {
     const cells = Array.from({ length: 7 }, (_, index) => clean(row[index]));
-    const headerText = cells.slice(0, 3).join(" ");
-    const dateISO = toISO(headerText);
-    const time = normalizeTime(headerText);
+    const dateISO = /^\\s*\\d{1,2}\\.\\d{1,2}\\.\\d{4}\\s*$/.test(cells[1]) ? toISO(cells[1]) : null;
+    const time = /^\\s*(?:[01]?\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?\\s*$/.test(cells[2]) ? normalizeTime(cells[2]) : null;
+    const rowNotes = cells.slice(0, 3).filter((cell, index) => cell && !(index === 0 && isWeekday(cell)) && !(index === 1 && /^\\s*\\d{1,2}\\.\\d{1,2}\\.\\d{4}\\s*$/.test(cell)) && !(index === 2 && /^\\s*(?:[01]?\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?\\s*$/.test(cell)));
 
     if (dateISO && time) {
       if (current) appointments.push(current);
-      const notes = cells.slice(0, 3).filter((cell) => cell && !DATE_RE.test(cell) && !TIME_RE.test(cell) && !isWeekday(cell));
+      const notes = rowNotes;
       current = makeAppointment(dateISO, time, notes);
     } else if (current) {
       const notes = cells.slice(0, 3).filter((cell) => cell && !DATE_RE.test(cell) && !TIME_RE.test(cell) && !isWeekday(cell));
