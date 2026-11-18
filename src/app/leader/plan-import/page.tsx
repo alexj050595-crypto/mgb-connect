@@ -239,6 +239,16 @@ export default function PlanImportPage() {
           <input type="file" accept=".pdf,.xlsx,.xls,.mgb,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/json" onChange={onFileChange} className="sr-only" />
         </label>
 
+        <label className="mt-4 flex cursor-pointer items-center gap-4 rounded-2xl border border-amber-300/20 bg-amber-300/[0.06] p-4 transition hover:border-amber-300/40 hover:bg-amber-300/[0.09]">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-300"><Upload size={20} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold text-white">Gespeicherte .mgb-Datei importieren</span>
+            <span className="mt-1 block text-sm text-white/45">Einen zuvor exportierten MGB-Plan auswählen und mit denselben Namenszuordnungen weiterarbeiten.</span>
+          </span>
+          <span className="shrink-0 rounded-xl border border-amber-300/20 px-3 py-2 text-xs font-semibold text-amber-200">Datei wählen</span>
+          <input type="file" accept=".mgb,application/json" onChange={onFileChange} className="sr-only" />
+        </label>
+
         {error && <p role="alert" className="mt-5 rounded-2xl border border-red-400/20 bg-red-400/[0.06] p-4 text-sm text-red-200">{error}</p>}
         {message && <p role="status" className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 text-sm text-emerald-200">{message}</p>}
         {warnings.map((warning, index) => <p key={index} className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-3 text-sm text-amber-200">{warning}</p>)}
