@@ -9,6 +9,7 @@ import type { Service, ExcuseReason } from "@/data/services";
 type ServiceContextType = {
   services: Service[];
   myServices: Service[];
+  refreshServices: () => Promise<void>;
   getService: (id: string) => Service | undefined;
   getTotalPoints: () => number;
   getCompletedPoints: () => number;
@@ -159,6 +160,7 @@ export function ServiceProvider({ children }: { children: ReactNode }) {
     () => ({
       services,
       myServices,
+      refreshServices: loadServices,
       getService,
       getTotalPoints,
       getCompletedPoints,
