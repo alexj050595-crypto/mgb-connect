@@ -91,8 +91,8 @@ begin
     assigned_id := nullif(item ->> 'assignedTo', '')::uuid;
     leader_id_value := nullif(item ->> 'leaderId', '')::uuid;
 
-    if title_value is null or char_length(title_value) > 160 then
-      raise exception 'Der Diensteintrag benötigt einen Titel mit maximal 160 Zeichen.';
+    if title_value is null or char_length(title_value) > 240 then
+      raise exception 'Der Diensteintrag benötigt einen Titel mit maximal 240 Zeichen.';
     end if;
     if time_value !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' then
       raise exception 'Ungültige Uhrzeit im Import.';
