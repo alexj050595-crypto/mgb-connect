@@ -99,7 +99,19 @@ export default function PlanImportPage() {
   function updateAppointment(index: number, field: "title" | "dateISO" | "time" | "notes" | "points", value: string | number) {
     setPlan((current) => current ? {
       ...current,
-      appointments: current.appointments.map((appointment, i) => i === index ? { ...appointment, [field]: field === "notes" && typeof value === "string" ? value.split(/[·\\n]/).map((note) => note.trim()).filter(Boolean) : value } : appointment),
+      appointments: current.appointments.map((appointment, i) => {
+        if (i !== index) return appointment;
+        if (field === "notes" && typeof value === "string") {
+          return { ...appointment, notes: value.split(/[·\\n]/).map((note) => note.trim()).filter(Boolean) };
+        }
+        if (field === "points" && typeof value === "number") {
+          return { ...appointment, points: value };
+        }
+        if ((field === "title" || field === "dateISO" || field === "time") && typeof value === "string") {
+          return { ...appointment, [field]: value };
+        }
+        return appointment;
+      }),
     } : current);
   }
 
