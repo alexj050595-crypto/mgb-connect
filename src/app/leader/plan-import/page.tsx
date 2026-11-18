@@ -121,7 +121,7 @@ export default function PlanImportPage() {
       appointments: current.appointments.map((appointment, i) => {
         if (i !== index) return appointment;
         if (field === "notes" && typeof value === "string") {
-          return { ...appointment, notes: value.split(/[·\\n]/).map((note) => note.trim()).filter(Boolean) };
+          return { ...appointment, notes: value.split(/[·\n]/).map((note) => note.trim()).filter(Boolean) };
         }
         if (field === "points" && typeof value === "number") {
           return { ...appointment, points: value };
