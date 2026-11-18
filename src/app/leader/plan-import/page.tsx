@@ -18,6 +18,7 @@ import {
   type MgbPlanFile,
 } from "@/lib/mgb-plan";
 import { createClient } from "@/lib/supabase/client";
+import { parsePdfPlan, parseXlsxPlan } from "@/lib/plan-source-parsers";
 
 type Person = { id: string; display_name: string; role: string; active: boolean };
 type Mapping = { abbreviation: string; normalized_abbreviation: string; profile_id: string };
@@ -36,6 +37,7 @@ export default function PlanImportPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   const canManage = hasPermission("manage_schedule");
   const abbreviations = useMemo(
@@ -74,23 +76,40 @@ export default function PlanImportPage() {
     const file = event.target.files?.[0];
     setError("");
     setMessage("");
+    setWarnings([]);
     setPlan(null);
     setLoaded(false);
     setSelections({});
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".mgb")) {
-      setError("In dieser ersten Importstufe werden .mgb-Dateien unterstützt. PDF- und Excel-Erkennung folgt als nächster Schritt.");
+    if (file.size > 20 * 1024 * 1024) {
+      setError("Die Datei ist größer als 20 MB. Bitte verkleinere sie oder teile den Plan auf.");
       return;
     }
     try {
-      const result = decodeMgbPlan(await file.text());
-      if (!result.ok) {
-        setError(result.issues.map((issue) => issue.path + ": " + issue.message).join(" · "));
+      const extension = file.name.toLowerCase().split(".").pop();
+      let parsedPlan: MgbPlanFile;
+      if (extension === "mgb") {
+        const result = decodeMgbPlan(await file.text());
+        if (!result.ok) {
+          setError(result.issues.map((issue) => issue.path + ": " + issue.message).join(" · "));
+          return;
+        }
+        parsedPlan = { ...result.plan, sourceFileName: result.plan.sourceFileName || file.name };
+      } else if (extension === "xlsx" || extension === "xls") {
+        const result = await parseXlsxPlan(file);
+        parsedPlan = result.plan;
+        setWarnings(result.warnings);
+      } else if (extension === "pdf") {
+        const result = await parsePdfPlan(file);
+        parsedPlan = result.plan;
+        setWarnings(result.warnings);
+      } else {
+        setError("Bitte wähle eine .mgb-, .xlsx-, .xls- oder .pdf-Datei aus.");
         return;
       }
-      setPlan({ ...result.plan, sourceFileName: result.plan.sourceFileName || file.name });
-      await loadProfilesAndMappings([...new Set(result.plan.appointments.flatMap((appointment) => appointment.assignedNames))]);
-      setMessage(file.name + " wurde eingelesen. Bitte kontrolliere Termine und Namenszuordnungen.");
+      setPlan(parsedPlan);
+      await loadProfilesAndMappings([...new Set(parsedPlan.appointments.flatMap((appointment) => appointment.assignedNames))]);
+      setMessage(file.name + " wurde eingelesen. Bitte kontrolliere alle Termine und Namenszuordnungen.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Die Datei konnte nicht gelesen werden.");
     }
@@ -211,7 +230,7 @@ export default function PlanImportPage() {
         </label>
 
         {error && <p role="alert" className="mt-5 rounded-2xl border border-red-400/20 bg-red-400/[0.06] p-4 text-sm text-red-200">{error}</p>}
-        {message && <p role="status" className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 text-sm text-emerald-200">{message}</p>}
+        {message && <p role="status" className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 text-sm text-emerald-200">{message}</p>}\n        {warnings.map((warning, index) => <p key={index} className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-3 text-sm text-amber-200">{warning}</p>)}
 
         {plan && (
           <>
