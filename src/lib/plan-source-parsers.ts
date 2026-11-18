@@ -75,7 +75,7 @@ export async function parseXlsxPlan(file: File): Promise<ParseResult> {
       current = makeAppointment(dateISO, time, notes);
     } else if (current) {
       const notes = cells.slice(0, 3).filter((cell) => cell && !DATE_RE.test(cell) && !TIME_RE.test(cell) && !isWeekday(cell));
-      current.notes = unique([...current.notes, ...notes]);
+      current.notes = unique([...current.notes, ...notes, ...inlineNotes]);
     }
 
     if (current) {
@@ -125,7 +125,7 @@ export async function parsePdfPlan(file: File): Promise<ParseResult> {
         .map((item) => item.text)
         .filter((text) => !DATE_RE.test(text) && !TIME_RE.test(text) && !isWeekday(text))
         .filter((text) => !nameWords.includes(text.toLocaleLowerCase("de-DE")) && !names.some((name) => name.toLocaleLowerCase("de-DE") === text.toLocaleLowerCase("de-DE")));
-      current = makeAppointment(dateISO, time, notes, names);
+      current = makeAppointment(dateISO, time, [...notes, ...inlineNotes], names);
       continue;
     }
 
