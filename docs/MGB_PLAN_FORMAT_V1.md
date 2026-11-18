@@ -41,3 +41,11 @@ Die Quelldateien enthalten keine verlässlichen Angaben zu Ort, Leiter oder Punk
 7. Demo- und echte Daten bleiben getrennt.
 
 Version 1 war ein nicht produktiver Entwurf. Die aktuelle Version 2 verwendet das Terminmodell mit einer Liste von Kürzeln. Unbekannte Versionen werden abgelehnt.
+
+## Quellimport (PDF und Excel)
+
+Die Importseite verarbeitet zusätzlich direkt:
+- `.xlsx` und `.xls`: erstes Tabellenblatt, Datum in Spalte B, Uhrzeit in Spalte C, Hinweise in A:C und Namenskürzel in D:G. Fortsetzungszeilen ohne neues Datum werden dem vorherigen Termin zugeordnet. Datumsangaben innerhalb eines Hinweises (z. B. eine Probenzeit) starten keinen neuen Dienst.
+- `.pdf`: auslesbare Textebene mit Datum/Uhrzeit und positionsbasierten Textzeilen. Die erkannten Namen und Hinweise werden in die Vorschau übernommen.
+
+PDF-Dateien ohne Textebene (reine Scans) benötigen OCR. OCR ist derzeit nicht enthalten; solche Dateien werden mit einer verständlichen Fehlermeldung abgelehnt. Handschriftliche Ergänzungen und ungewöhnliche Kürzelformate müssen in jedem Fall in der Vorschau geprüft werden. Die Originaldateien werden nicht an einen externen KI-Dienst gesendet.
