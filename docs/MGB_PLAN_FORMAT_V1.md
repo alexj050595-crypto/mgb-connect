@@ -15,7 +15,7 @@ Eine .mgb-Datei ist UTF-8-kodiertes JSON mit einer versionierten Hülle. Sie ent
 
 Die Datei enthält createdAt, optional sourceFileName, sourceFormat und appointments.
 
-Jeder Termin enthält title, dateISO (YYYY-MM-DD), time (HH:MM), notes (Textliste) und assignedNames (Liste aller Kürzel).
+Jeder Termin enthält title, dateISO (YYYY-MM-DD), time (HH:MM), notes (Textliste), assignedNames (Liste aller Kürzel) und optional points (ganze Zahl von 0 bis 1000; Standardwert 0).
 
 Die vier Namensspalten werden zusammengeführt; ihre Position hat keine fachliche Bedeutung. Ein Termin ohne Kürzel bleibt erhalten und wird als nicht zugewiesener Eintrag importiert.
 
