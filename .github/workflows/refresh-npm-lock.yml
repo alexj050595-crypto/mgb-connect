@@ -32,5 +32,6 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add package-lock.json
             git commit -m "chore: refresh npm lockfile"
+            git pull --rebase origin feature/mgb-plan-format-v1
             git push
           fi
