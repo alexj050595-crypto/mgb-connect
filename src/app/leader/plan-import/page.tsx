@@ -134,7 +134,11 @@ export default function PlanImportPage() {
     } : current);
   }
 
-  function removeAppointment(index: number) {\n    setPlan((current) => current ? { ...current, appointments: current.appointments.filter((_, i) => i !== index) } : current);\n  }\n\n  function confirmMapping(name: string) {
+  function removeAppointment(index: number) {
+    setPlan((current) => current ? { ...current, appointments: current.appointments.filter((_, i) => i !== index) } : current);
+  }
+
+  function confirmMapping(name: string) {
     const key = normalizePlanAbbreviation(name);
     const current = selections[key];
     if (!current?.profileId) return;
@@ -230,7 +234,8 @@ export default function PlanImportPage() {
         </label>
 
         {error && <p role="alert" className="mt-5 rounded-2xl border border-red-400/20 bg-red-400/[0.06] p-4 text-sm text-red-200">{error}</p>}
-        {message && <p role="status" className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 text-sm text-emerald-200">{message}</p>}\n        {warnings.map((warning, index) => <p key={index} className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-3 text-sm text-amber-200">{warning}</p>)}
+        {message && <p role="status" className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 text-sm text-emerald-200">{message}</p>}
+        {warnings.map((warning, index) => <p key={index} className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-3 text-sm text-amber-200">{warning}</p>)}
 
         {plan && (
           <>
@@ -243,7 +248,8 @@ export default function PlanImportPage() {
 
             <div className="mt-4 space-y-3">
               {plan.appointments.map((appointment, index) => (
-                <article key={index} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">\n                  <div className="mb-3 flex items-center justify-between"><span className="text-xs text-white/30">Termin {index + 1}</span><button type="button" disabled={plan.appointments.length <= 1} onClick={() => removeAppointment(index)} className="text-xs text-red-300/70 hover:text-red-300 disabled:opacity-30">Termin entfernen</button></div>
+                <article key={index} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+                  <div className="mb-3 flex items-center justify-between"><span className="text-xs text-white/30">Termin {index + 1}</span><button type="button" disabled={plan.appointments.length <= 1} onClick={() => removeAppointment(index)} className="text-xs text-red-300/70 hover:text-red-300 disabled:opacity-30">Termin entfernen</button></div>
                   <div className="grid gap-3 sm:grid-cols-[1fr_170px_120px_110px]">
                     <label className="text-xs text-white/40">Titel<input value={appointment.title} onChange={(event) => updateAppointment(index, "title", event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
                     <label className="text-xs text-white/40">Datum<input type="date" value={appointment.dateISO} onChange={(event) => updateAppointment(index, "dateISO", event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
