@@ -134,7 +134,7 @@ export default function PlanImportPage() {
     } : current);
   }
 
-  function confirmMapping(name: string) {
+  function removeAppointment(index: number) {\n    setPlan((current) => current ? { ...current, appointments: current.appointments.filter((_, i) => i !== index) } : current);\n  }\n\n  function confirmMapping(name: string) {
     const key = normalizePlanAbbreviation(name);
     const current = selections[key];
     if (!current?.profileId) return;
@@ -243,7 +243,7 @@ export default function PlanImportPage() {
 
             <div className="mt-4 space-y-3">
               {plan.appointments.map((appointment, index) => (
-                <article key={index} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+                <article key={index} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">\n                  <div className="mb-3 flex items-center justify-between"><span className="text-xs text-white/30">Termin {index + 1}</span><button type="button" disabled={plan.appointments.length <= 1} onClick={() => removeAppointment(index)} className="text-xs text-red-300/70 hover:text-red-300 disabled:opacity-30">Termin entfernen</button></div>
                   <div className="grid gap-3 sm:grid-cols-[1fr_170px_120px_110px]">
                     <label className="text-xs text-white/40">Titel<input value={appointment.title} onChange={(event) => updateAppointment(index, "title", event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
                     <label className="text-xs text-white/40">Datum<input type="date" value={appointment.dateISO} onChange={(event) => updateAppointment(index, "dateISO", event.target.value)} className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none focus:border-amber-300/30" /></label>
