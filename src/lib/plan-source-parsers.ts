@@ -78,8 +78,7 @@ export async function parseXlsxPlan(file: File): Promise<ParseResult> {
       const notes = rowNotes;
       current = makeAppointment(dateISO, time, notes);
     } else if (current) {
-      const notes = cells.slice(0, 3).filter((cell) => cell && !DATE_RE.test(cell) && !TIME_RE.test(cell) && !isWeekday(cell));
-      current.notes = unique([...current.notes, ...notes, ...inlineNotes]);
+      current.notes = unique([...current.notes, ...rowNotes]);
     }
 
     if (current) {
