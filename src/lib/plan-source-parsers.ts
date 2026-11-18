@@ -33,6 +33,10 @@ function normalizeTime(value: string): string | null {
 function isWeekday(value: string): boolean {
   return /^(mo|di|mi|do|fr|sa|so)(ntag|nstag|ttwoch|nnerstag|eitag|mstag|nntag)?\.?$/i.test(value);
 }
+function extractNames(value: string): string[] {
+  const matches = value.match(/[\\p{L}][\\p{L}'’-]*(?:\\s+[\\p{L}][\\p{L}'’-]*)*\\s+[\\p{L}]\\.?/gu) ?? [];
+  return unique(matches.filter((match) => ABBREV_RE.test(match)));
+}
 function unique(values: string[]): string[] {
   return [...new Set(values.map(clean).filter(Boolean))];
 }
