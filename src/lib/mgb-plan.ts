@@ -15,6 +15,7 @@ export type MgbPlanAppointment = {
   time: string;
   notes: string[];
   assignedNames: string[];
+  points?: number;
 };
 export type MgbPlanFile = {
   format: typeof MGB_PLAN_FORMAT;
@@ -69,7 +70,11 @@ function validateAppointment(value: unknown, index: number, issues: MgbPlanValid
     if (input.length > max) issues.push({ path: path + "." + field, message: "Zu viele Einträge." });
     return input.slice(0, max).map((v, i) => readText(v, path + "." + field + "[" + i + "]", issues, true)).filter(Boolean);
   };
-  return { title, dateISO, time, notes: list(value.notes, "notes", true), assignedNames: list(value.assignedNames, "assignedNames") };
+  const points = value.points === undefined ? 0 : value.points;
+  if (typeof points !== "number" || !Number.isInteger(points) || points < 0 || points > 1000) {
+    issues.push({ path: path + ".points", message: "Punkte müssen eine ganze Zahl zwischen 0 und 1000 sein." });
+  }
+  return { title, dateISO, time, notes: list(value.notes, "notes", true), assignedNames: list(value.assignedNames, "assignedNames"), points: typeof points === "number" && Number.isInteger(points) && points >= 0 && points <= 1000 ? points : 0 };
 }
 export function validateMgbPlan(value: unknown): MgbPlanValidationResult {
   const issues: MgbPlanValidationIssue[] = [];
