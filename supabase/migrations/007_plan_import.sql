@@ -80,7 +80,84 @@ begin
     end if;
 
     title_value := nullif(trim(item ->> 'title'), '');
-    if coalesce(item ->> 'dateISO', '') !~ '^\\d{4}-\\d{2}-\\d{2}$' then
+    if coalesce(item ->> 'dateISO', '') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2} then
+      raise exception 'Ungültiges Datum im Import.';
+    end if;
+    date_value := (item ->> 'dateISO')::date;
+    time_value := trim(coalesce(item ->> 'time', ''));
+    location_value := trim(coalesce(item ->> 'location', ''));
+    meeting_value := trim(coalesce(item ->> 'meeting', ''));
+    points_value := coalesce((item ->> 'points')::integer, 0);
+    assigned_id := nullif(item ->> 'assignedTo', '')::uuid;
+    leader_id_value := nullif(item ->> 'leaderId', '')::uuid;
+
+    if title_value is null or char_length(title_value) > 240 then
+      raise exception 'Der Diensteintrag benötigt einen Titel mit maximal 240 Zeichen.';
+    end if;
+    if time_value !~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' then
+      raise exception 'Ungültige Uhrzeit im Import.';
+    end if;
+    if char_length(location_value) > 160 or char_length(meeting_value) > 10000 then
+      raise exception 'Ort oder Treffpunkt/Hinweis ist zu lang.';
+    end if;
+    if points_value < 0 or points_value > 1000 then
+      raise exception 'Punkte müssen zwischen 0 und 1000 liegen.';
+    end if;
+    if assigned_id is not null and not exists (
+      select 1 from public.profiles where id = assigned_id and active = true
+    ) then
+      raise exception 'Zugewiesenes Profil fehlt oder ist inaktiv.';
+    end if;
+    if leader_id_value is not null and not exists (
+      select 1 from public.profiles where id = leader_id_value and active = true
+    ) then
+      raise exception 'Leiterprofil fehlt oder ist inaktiv.';
+    end if;
+
+    -- The loop checks already-inserted rows too. Any duplicate aborts the
+    -- complete function call, so the plan is never imported only partially.
+    if public.is_demo_mode() then
+      if exists (
+        select 1 from public.demo_services
+        where date_iso = date_value and time = time_value
+          and title = title_value and location = location_value
+          and assigned_to is not distinct from assigned_id
+      ) then
+        raise exception 'Doppelte Dienste erkannt. Es wurden keine Einträge importiert.';
+      end if;
+
+      insert into public.demo_services
+        (title, date_iso, time, location, leader_id, meeting, points, assigned_to, status)
+      values
+        (title_value, date_value, time_value, location_value, leader_id_value,
+         meeting_value, points_value, assigned_id, 'scheduled');
+    else
+      if exists (
+        select 1 from public.services
+        where date_iso = date_value and time = time_value
+          and title = title_value and location = location_value
+          and assigned_to is not distinct from assigned_id
+      ) then
+        raise exception 'Doppelte Dienste erkannt. Es wurden keine Einträge importiert.';
+      end if;
+
+      insert into public.services
+        (title, date_iso, time, location, leader_id, meeting, points, assigned_to, status)
+      values
+        (title_value, date_value, time_value, location_value, leader_id_value,
+         meeting_value, points_value, assigned_id, 'scheduled');
+    end if;
+
+    imported_count := imported_count + 1;
+  end loop;
+
+  return imported_count;
+end;
+$$;
+
+revoke all on function public.import_plan_services(jsonb, boolean) from public;
+grant execute on function public.import_plan_services(jsonb, boolean) to authenticated;
+ then
       raise exception 'Ungültiges Datum im Import.';
     end if;
     date_value := (item ->> 'dateISO')::date;
