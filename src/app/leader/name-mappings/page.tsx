@@ -64,7 +64,7 @@ export default function NameMappingsPage() {
     return people.filter((person) => {
       const ownMappings = mappings.filter((mapping) => mapping.profile_id === person.id);
       const matchesSearch = !query || [person.display_name, roleLabels[person.role] ?? person.role, ...ownMappings.map((mapping) => mapping.abbreviation)].join(" ").toLocaleLowerCase("de-DE").includes(query);
-      const matchesRole = roleFilter === "Alle" || person.role === roleFilter;
+      const matchesRole = roleFilter === "Alle" || (roleFilter === "leitung" ? ["leiter", "planschreiber", "admin"].includes(person.role) : person.role === roleFilter);
       const matchesStatus = statusFilter === "Alle" || (statusFilter === "Zugeordnet" ? ownMappings.length > 0 : ownMappings.length === 0);
       return matchesSearch && matchesRole && matchesStatus;
     }).sort((a, b) => {
@@ -156,7 +156,7 @@ export default function NameMappingsPage() {
         <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
           <div className="flex flex-col gap-3 lg:flex-row">
             <div className="relative min-w-0 flex-1"><Search size={17} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/25" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nach Name oder Kürzel suchen…" className="w-full rounded-xl border border-white/10 bg-black/20 py-3 pl-11 pr-4 text-sm text-white outline-none placeholder:text-white/25 focus:border-amber-300/30" /></div>
-            <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="rounded-xl border border-white/10 bg-[#101010] px-3 py-3 text-sm text-white"><option value="Alle">Alle Rollen</option><option value="messdiener">Messdiener</option><option value="leiter">Leiter</option><option value="planschreiber">Planschreiber</option><option value="admin">Admin</option></select>
+            <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className="rounded-xl border border-white/10 bg-[#101010] px-3 py-3 text-sm text-white"><option value="Alle">Alle Rollen</option><option value="messdiener">Messdiener</option><option value="leitung">Leitung (inkl. Admin/Planschreiber)</option><option value="leiter">Nur Leiter</option><option value="planschreiber">Planschreiber</option><option value="admin">Admin</option></select>
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-xl border border-white/10 bg-[#101010] px-3 py-3 text-sm text-white"><option value="Alle">Alle Status</option><option value="Zugeordnet">Zugeordnet</option><option value="Nicht zugeordnet">Noch nicht zugeordnet</option></select>
           </div>
           <p className="mt-3 text-xs text-white/35">{filteredPeople.length} Benutzer werden angezeigt. Aktive Filter wirken nur auf diese Übersicht.</p>
