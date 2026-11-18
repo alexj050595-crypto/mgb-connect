@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ChangeEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Download, FileUp, Loader2, ShieldCheck, Upload } from "lucide-react";
+import { ArrowLeft, Download, FileUp, Loader2, ShieldCheck, Upload } from "lucide-react";
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
