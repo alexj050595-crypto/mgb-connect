@@ -175,7 +175,7 @@ export default function PlanImportPage() {
         if (mappingError) throw mappingError;
       }
 
-      const services = plan.appointments.flatMap((appointment) => {
+      const services: Array<{ title: string; dateISO: string; time: string; location: string; leaderId: null; meeting: string; points: number; assignedTo: string | null }> = plan.appointments.flatMap((appointment) => {
         const base = {
           title: appointment.title,
           dateISO: appointment.dateISO,
