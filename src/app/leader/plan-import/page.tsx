@@ -47,6 +47,10 @@ export default function PlanImportPage() {
     [plan]
   );
   const unresolved = abbreviations.filter((name) => !selections[normalizePlanAbbreviation(name)]?.confirmed);
+  const openAbbreviations = [...unresolved].sort((a, b) => {
+    const score = (name: string) => Math.max(0, ...people.map((person) => getPlanNameMatchScore(name, person.display_name)));
+    return score(b) - score(a) || a.localeCompare(b, "de");
+  });
   const duplicates = useMemo(() => plan ? findDuplicateMgbAppointments(plan.appointments) : [], [plan]);
 
   async function loadProfilesAndMappings(names: string[]) {
@@ -278,26 +282,32 @@ export default function PlanImportPage() {
             </div>
 
             <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.035] p-5 sm:p-6">
-              <h2 className="text-xl font-bold text-white">Namenszuordnungen</h2>
-              <p className="mt-1 text-sm leading-6 text-white/45">Gespeicherte Zuordnungen werden automatisch wiederverwendet. Neue Vorschläge müssen ausdrücklich bestätigt werden.</p>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Offene Namenszuordnungen</h2>
+                  <p className="mt-1 text-sm leading-6 text-white/45">Nur noch nicht bestätigte Kürzel werden angezeigt. Treffer stehen zuerst; bestätigte Zuordnungen werden automatisch ausgeblendet.</p>
+                </div>
+                <Link href="/leader/name-mappings" className="inline-flex items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-300/15">Alle Zuordnungen verwalten</Link>
+              </div>
+              <p className="mt-3 text-xs text-white/35">{abbreviations.length - unresolved.length} von {abbreviations.length} Kürzeln bereits zugeordnet · {unresolved.length} noch offen</p>
               {!loaded ? <p className="mt-4 text-sm text-white/40">Benutzer werden geladen…</p> : (
                 <div className="mt-5 space-y-3">
-                  {abbreviations.map((name) => {
+                  {openAbbreviations.length === 0 ? <p className="rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.05] p-4 text-sm text-emerald-200">Alle Kürzel sind bereits zugeordnet. Du kannst die Zuordnungen jederzeit in der zentralen Übersicht bearbeiten.</p> : openAbbreviations.map((name) => {
                     const key = normalizePlanAbbreviation(name);
                     const selection = selections[key] ?? { profileId: "", confirmed: false, existing: false };
                     const suggestions = people.filter((person) => getPlanNameMatchScore(name, person.display_name) > 0);
                     return (
                       <div key={key} className="rounded-2xl border border-white/10 bg-black/15 p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-white">{name}</p>{selection.confirmed ? <span className="inline-flex items-center gap-1 text-xs text-emerald-300"><Check size={14} />{selection.existing ? "Gespeichert" : "Bestätigt"}</span> : <span className="text-xs text-amber-200">Noch nicht bestätigt</span>}</div>
+                        <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-white">{name}</p><span className={`text-xs ${suggestions.length ? "text-emerald-300" : "text-amber-200"}`}>{suggestions.length ? `${suggestions.length} mögliche Treffer` : "Kein Treffer gefunden"}</span></div>
                         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                           <select value={selection.profileId} onChange={(event) => setSelections((previous) => ({ ...previous, [key]: { profileId: event.target.value, confirmed: false, existing: false } }))} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#101010] px-3 py-3 text-sm text-white outline-none focus:border-amber-300/30">
                             <option value="">Benutzer auswählen…</option>
-                            {people.map((person) => <option key={person.id} value={person.id}>{person.display_name} · {person.role}</option>)}
+                            {[...people].sort((a, b) => getPlanNameMatchScore(name, b.display_name) - getPlanNameMatchScore(name, a.display_name) || a.display_name.localeCompare(b.display_name, "de")).map((person) => <option key={person.id} value={person.id}>{person.display_name} · {person.role}</option>)}
                           </select>
                           <button disabled={!selection.profileId || selection.confirmed} onClick={() => confirmMapping(name)} className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-200 disabled:opacity-40">Zuordnung bestätigen</button>
                         </div>
-                        {!selection.confirmed && suggestions.length > 1 && <p className="mt-2 text-xs text-white/35">{suggestions.length} mögliche Treffer – bitte anhand des Vornamens/Kürzels manuell auswählen.</p>}
-                        {!selection.confirmed && suggestions.length === 0 && <p className="mt-2 text-xs text-white/35">Kein eindeutiger Vorschlag. Bitte Benutzer manuell auswählen.</p>}
+                        {suggestions.length > 1 && <p className="mt-2 text-xs text-white/35">{suggestions.length} mögliche Treffer – bitte anhand des Vornamens/Kürzels manuell auswählen.</p>}
+                        {suggestions.length === 0 && <p className="mt-2 text-xs text-white/35">Kein passender Vorschlag gefunden. Bitte den Benutzer manuell auswählen.</p>}
                       </div>
                     );
                   })}
