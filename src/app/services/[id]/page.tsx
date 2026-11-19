@@ -314,7 +314,7 @@ export default function ServiceDetailPage({
             <InfoRow
               icon={<User size={20} />}
               label="Leiter"
-              value={service.leader}
+              value={service.leader || "Siehe Teamübersicht"}
             />
 
             <InfoRow
