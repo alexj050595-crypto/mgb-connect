@@ -21,12 +21,13 @@ export default function LeaderTeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isLeader } = useRole();
+  const { hasPermission } = useRole();
+  const canViewTeam = hasPermission("view_team");
   const { user } = useAuth();
   const { enabled: demoMode, loading: demoLoading } = useDemoMode();
 
   const loadMembers = useCallback(async () => {
-    if (!user || !isLeader || demoLoading) return;
+    if (!user || !canViewTeam || demoLoading) return;
     setLoading(true); setError(null);
     const supabase = createClient();
     const serviceTable = demoMode ? "demo_services" : "services";
@@ -43,7 +44,7 @@ export default function LeaderTeamPage() {
     }
     setMembers((profiles ?? []).map((profile) => ({ id: profile.id, name: profile.display_name || "Unbenannter Benutzer", role: profile.role as UserRole, active: profile.active, points: profile.points, services: counts.get(profile.id) ?? 0 })));
     setLoading(false);
-  }, [isLeader, user, demoMode, demoLoading]);
+  }, [canViewTeam, user, demoMode, demoLoading]);
 
   useEffect(() => { void loadMembers(); }, [loadMembers]);
 
@@ -54,7 +55,7 @@ export default function LeaderTeamPage() {
   const activeCount = members.filter((member) => member.active).length;
   const serviceCount = members.reduce((sum, member) => sum + member.services, 0);
 
-  if (!isLeader) return <main className="relative min-h-screen overflow-hidden"><Background /><div className="relative z-10 flex min-h-screen items-center justify-center px-6"><div className="text-center"><h1 className="text-2xl font-bold text-white">Kein Zugriff</h1><Link href="/" className="mt-5 inline-flex items-center gap-2 text-white/50 hover:text-white"><ArrowLeft size={16} />Dashboard</Link></div></div></main>;
+  if (!canViewTeam) return <main className="relative min-h-screen overflow-hidden"><Background /><div className="relative z-10 flex min-h-screen items-center justify-center px-6"><div className="text-center"><h1 className="text-2xl font-bold text-white">Kein Zugriff</h1><Link href="/" className="mt-5 inline-flex items-center gap-2 text-white/50 hover:text-white"><ArrowLeft size={16} />Dashboard</Link></div></div></main>;
 
   return <main className="relative min-h-screen overflow-hidden"><Background /><div className="pointer-events-none fixed inset-x-0 top-0 z-30 h-32 bg-gradient-to-b from-[#050505] via-[#050505]/92 to-transparent" /><Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} /><Topbar sidebarOpen={sidebarOpen} onMenuClick={() => setSidebarOpen(true)} />
     <section className="relative z-10 mx-auto max-w-6xl px-4 pb-12 pt-28 sm:px-6 sm:pt-36">
