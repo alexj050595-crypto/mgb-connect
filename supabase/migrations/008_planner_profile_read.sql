@@ -33,11 +33,12 @@ begin
   select s.date_iso, s.time, s.title, s.location, s.meeting, s.leader_id
   into selected_date, selected_time, selected_title, selected_location, selected_meeting, selected_leader_id
   from public.services s
-  where s.id = p_service_id;
+  where s.id = p_service_id
+    and not public.is_demo_mode();
 
   if not found then
-    select s.date_iso, s.time, s.title, s.location, s.meeting
-    into selected_date, selected_time, selected_title, selected_location, selected_meeting
+    select s.date_iso, s.time, s.title, s.location, s.meeting, s.leader_id
+    into selected_date, selected_time, selected_title, selected_location, selected_meeting, selected_leader_id
     from public.demo_services s
     where s.id = p_service_id
       and public.is_demo_mode();
