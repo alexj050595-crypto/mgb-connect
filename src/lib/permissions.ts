@@ -51,6 +51,7 @@ export type Permission =
   | "view_statistics"
   | "confirm_requests"
   | "manage_schedule"
+  | "manage_attendance"
   | "manage_members"
   | "manage_roles"
   | "manage_announcements"
@@ -69,6 +70,7 @@ export const permissions: Record<UserRole, Permission[]> = {
     "view_team",
     "view_service_management",
     "view_statistics",
+    "manage_attendance",
   ],
 
   planschreiber: [
@@ -78,6 +80,7 @@ export const permissions: Record<UserRole, Permission[]> = {
     "view_statistics",
     "confirm_requests",
     "manage_schedule",
+    "manage_attendance",
   ],
 
   admin: [
@@ -87,6 +90,7 @@ export const permissions: Record<UserRole, Permission[]> = {
     "view_statistics",
     "confirm_requests",
     "manage_schedule",
+    "manage_attendance",
     "manage_members",
     "manage_roles",
     "manage_announcements",

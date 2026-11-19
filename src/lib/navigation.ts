@@ -7,6 +7,7 @@ import {
   Settings,
   ShieldCheck,
   ClipboardList,
+  ClipboardCheck,
   Users,
   BarChart3,
   CheckCircle2,
@@ -149,6 +150,15 @@ export const navigationItems: NavigationItem[] = [
       "admin",
     ],
     permission: "view_leader_area",
+  },
+
+  {
+    href: "/leader/attendance",
+    icon: ClipboardCheck,
+    title: "Anwesenheit",
+    description: "Anwesenheit nach Messen erfassen",
+    roles: ["leiter", "planschreiber", "admin"],
+    permission: "manage_attendance",
   },
 
   {
