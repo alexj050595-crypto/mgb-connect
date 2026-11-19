@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Plus, RefreshCw, Search, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Check, Plus, RefreshCw, Search, Trash2, Users, Undo2 } from "lucide-react";
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
@@ -13,6 +13,7 @@ import { normalizePlanAbbreviation } from "@/lib/mgb-plan";
 
 type Person = { id: string; display_name: string; role: string; active: boolean };
 type Mapping = { id: string; abbreviation: string; normalized_abbreviation: string; profile_id: string };
+type ImportBatch = { id: string; source_file_name: string | null; service_count: number; status: "active" | "rolled_back"; is_demo: boolean; created_at: string; rolled_back_at: string | null };
 
 const roleLabels: Record<string, string> = {
   messdiener: "Messdiener",
@@ -28,6 +29,7 @@ export default function NameMappingsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [people, setPeople] = useState<Person[]>([]);
   const [mappings, setMappings] = useState<Mapping[]>([]);
+  const [batches, setBatches] = useState<ImportBatch[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("Alle");
   const [statusFilter, setStatusFilter] = useState("Alle");
@@ -43,9 +45,10 @@ export default function NameMappingsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-    const [{ data: profileRows, error: profileError }, { data: mappingRows, error: mappingError }] = await Promise.all([
+    const [{ data: profileRows, error: profileError }, { data: mappingRows, error: mappingError }, { data: batchRows, error: batchError }] = await Promise.all([
       supabase.from("profiles").select("id, display_name, role, active").eq("active", true).order("display_name"),
       supabase.from("plan_name_mappings").select("id, abbreviation, normalized_abbreviation, profile_id").order("abbreviation"),
+      supabase.from("plan_import_batches").select("id, source_file_name, service_count, status, is_demo, created_at, rolled_back_at").order("created_at", { ascending: false }).limit(50),
     ]);
     if (profileError || mappingError) {
       setError(profileError?.message ?? mappingError?.message ?? "Die Zuordnungen konnten nicht geladen werden.");
@@ -54,6 +57,7 @@ export default function NameMappingsPage() {
     }
     setPeople((profileRows ?? []) as Person[]);
     setMappings((mappingRows ?? []) as Mapping[]);
+    setBatches((batchRows ?? []) as ImportBatch[]);
     setLoading(false);
   }, [supabase]);
 
@@ -101,6 +105,17 @@ export default function NameMappingsPage() {
     if (insertError) { setError(insertError.message); return; }
     setNewAbbreviation(""); setNewProfileId("");
     setMessage("Kürzel wurde gespeichert und wird bei künftigen Importen automatisch verwendet.");
+    await load();
+  }
+
+  async function rollbackBatch(batch: ImportBatch) {
+    const label = batch.source_file_name || "Messdienerplan";
+    if (!window.confirm("Den Import „" + label + "“ wirklich vollständig rückgängig machen? Die damit angelegten Dienste werden aus den Konten entfernt.")) return;
+    setSaving(true); setError(""); setMessage("");
+    const { data, error: rollbackError } = await supabase.rpc("rollback_plan_import", { p_batch_id: batch.id });
+    setSaving(false);
+    if (rollbackError) { setError(rollbackError.message); return; }
+    setMessage(String(data ?? batch.service_count) + " Dienste wurden entfernt. Die dauerhaften Namenszuordnungen bleiben erhalten.");
     await load();
   }
 
@@ -152,6 +167,26 @@ export default function NameMappingsPage() {
 
         {error && <p role="alert" className="mt-5 rounded-xl border border-red-400/20 bg-red-400/[0.06] p-4 text-sm text-red-200">{error}</p>}
         {message && <p role="status" className="mt-5 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.06] p-4 text-sm text-emerald-200">{message}</p>}
+
+        <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div><h2 className="text-xl font-bold text-white">Importierte Pläne</h2><p className="mt-1 text-sm text-white/45">Hier kannst du nachvollziehen, welche Pläne hochgeladen wurden, und einen Import bei Bedarf zurücknehmen.</p></div>
+            <Link href="/leader/plan-import" className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-200">Neuen Plan importieren</Link>
+          </div>
+          <div className="mt-4 space-y-3">
+            {batches.length === 0 ? <p className="rounded-xl border border-white/10 bg-black/15 p-4 text-sm text-white/40">Noch keine protokollierten Planimporte vorhanden.</p> : batches.map((batch) => (
+              <article key={batch.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/15 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-white">{batch.source_file_name || "Messdienerplan"}</p>
+                  <p className="mt-1 text-xs text-white/40">{new Date(batch.created_at).toLocaleString("de-DE")} · {batch.service_count} Dienste · {batch.is_demo ? "Demo" : "Echte Daten"}</p>
+                  <p className={"mt-1 text-xs " + (batch.status === "active" ? "text-emerald-300" : "text-white/35")}>{batch.status === "active" ? "Import aktiv" : "Rückgängig gemacht"}</p>
+                </div>
+                {batch.status === "active" ? <button onClick={() => void rollbackBatch(batch)} disabled={saving} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-red-400/20 bg-red-400/[0.06] px-4 py-2.5 text-xs font-semibold text-red-200 disabled:opacity-40"><Undo2 size={15} />Import rückgängig machen</button> : <span className="text-xs text-white/30">Bereits zurückgenommen</span>}
+              </article>
+            ))}
+          </div>
+          <p className="mt-3 text-xs leading-5 text-white/30">Ein Import kann nur zurückgenommen werden, solange seine Dienste noch unverändert im Status „Eingeplant“ sind. Bereits bearbeitete Dienste werden zum Schutz vor Datenverlust nicht automatisch gelöscht. Namenszuordnungen bleiben beim Rückgängigmachen erhalten.</p>
+        </section>
 
         <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
           <div className="flex flex-col gap-3 lg:flex-row">

@@ -163,17 +163,19 @@ export default function PlanImportPage() {
   }
 
   async function importPlan() {
-    if (!plan || !user || unresolved.length) return;
+    if (!plan || !user) return;
     setBusy(true);
     setError("");
     setMessage("");
     try {
-      const mappings = abbreviations.map((abbreviation) => ({
-        abbreviation,
-        normalized_abbreviation: normalizePlanAbbreviation(abbreviation),
-        profile_id: selections[normalizePlanAbbreviation(abbreviation)].profileId,
-        created_by: user.id,
-      }));
+      const mappings = abbreviations
+        .filter((abbreviation) => selections[normalizePlanAbbreviation(abbreviation)]?.confirmed)
+        .map((abbreviation) => ({
+          abbreviation,
+          normalized_abbreviation: normalizePlanAbbreviation(abbreviation),
+          profile_id: selections[normalizePlanAbbreviation(abbreviation)].profileId,
+          created_by: user.id,
+        }));
       if (mappings.length) {
         const { error: mappingError } = await supabase
           .from("plan_name_mappings")
@@ -196,17 +198,27 @@ export default function PlanImportPage() {
           services.push({ ...base, assignedTo: null });
         } else {
           for (const name of appointment.assignedNames) {
-            services.push({ ...base, assignedTo: selections[normalizePlanAbbreviation(name)].profileId });
+            const selected = selections[normalizePlanAbbreviation(name)];
+            if (selected?.confirmed && selected.profileId) {
+              services.push({ ...base, assignedTo: selected.profileId });
+            }
           }
         }
+      }
+      if (!services.length) {
+        throw new Error("Es gibt noch keinen Dienst mit einer bestätigten Person oder einem offenen Termin. Bitte ordne mindestens ein Kürzel zu oder prüfe Termine ohne Namen.");
       }
       const { data, error: importError } = await supabase.rpc("import_plan_services", {
         p_services: services,
         p_demo: demoMode,
+        p_source_plan: plan,
+        p_source_file_name: plan.sourceFileName ?? "Messdienerplan",
       });
       if (importError) throw importError;
       await refreshServices();
-      setMessage(data + " Dienste wurden " + (demoMode ? "im Demo-Modus" : "in der echten Datenwelt") + " importiert. Die Namenszuordnungen wurden gespeichert.");
+      const importedCount = typeof data === "object" && data !== null && "service_count" in data ? Number(data.service_count) : services.length;
+      const skippedCount = abbreviations.filter((name) => !selections[normalizePlanAbbreviation(name)]?.confirmed).length;
+      setMessage(importedCount + " Dienste wurden " + (demoMode ? "im Demo-Modus" : "in der echten Datenwelt") + " importiert. " + (skippedCount ? skippedCount + " Kürzel ohne Zuordnung wurden ausgelassen. Du kannst sie später im Zuordnungsmanager ergänzen." : "Alle verwendeten Namenszuordnungen wurden gespeichert.") + " Den Import kannst du im Zuordnungsmanager rückgängig machen.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Der Import ist fehlgeschlagen.");
     } finally {
@@ -289,7 +301,7 @@ export default function PlanImportPage() {
                 </div>
                 <Link href="/leader/name-mappings" className="inline-flex items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-300/15">Alle Zuordnungen verwalten</Link>
               </div>
-              <p className="mt-3 text-xs text-white/35">{abbreviations.length - unresolved.length} von {abbreviations.length} Kürzeln bereits zugeordnet · {unresolved.length} noch offen</p>
+              <p className="mt-3 text-xs text-white/35">{abbreviations.length - unresolved.length} von {abbreviations.length} Kürzeln bereits zugeordnet · {unresolved.length} noch offen. Offene Kürzel werden beim Import übersprungen.</p>
               {!loaded ? <p className="mt-4 text-sm text-white/40">Benutzer werden geladen…</p> : (
                 <div className="mt-5 space-y-3">
                   {openAbbreviations.length === 0 ? <p className="rounded-2xl border border-emerald-400/15 bg-emerald-400/[0.05] p-4 text-sm text-emerald-200">Alle Kürzel sind bereits zugeordnet. Du kannst die Zuordnungen jederzeit in der zentralen Übersicht bearbeiten.</p> : openAbbreviations.map((name) => {
@@ -317,7 +329,7 @@ export default function PlanImportPage() {
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button onClick={downloadPlan} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/70"><Download size={16} />.mgb herunterladen</button>
-              <button onClick={importPlan} disabled={busy || demoLoading || !loaded || unresolved.length > 0} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-6 py-3 text-sm font-semibold text-amber-200 disabled:cursor-not-allowed disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin" /> : <Upload size={17} />}{busy ? "Import läuft…" : demoLoading ? "Datenmodus wird geprüft…" : unresolved.length ? unresolved.length + " Zuordnungen offen" : "Plan in MGB Connect importieren"}</button>
+              <button onClick={importPlan} disabled={busy || demoLoading || !loaded} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-6 py-3 text-sm font-semibold text-amber-200 disabled:cursor-not-allowed disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin" /> : <Upload size={17} />}{busy ? "Import läuft…" : demoLoading ? "Datenmodus wird geprüft…" : unresolved.length ? "Plan teilweise importieren (" + unresolved.length + " offen)" : "Plan in MGB Connect importieren"}</button>
             </div>
           </>
         )}
