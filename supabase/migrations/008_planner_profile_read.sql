@@ -70,14 +70,14 @@ begin
 
   return query
   with service_rows as (
-    select s.assigned_to, s.taken_by, s.status
+    select s.assigned_to, s.taken_by, s.status, s.leader_id
     from public.services s
     where not public.is_demo_mode()
       and s.date_iso = selected_date and s.time = selected_time
       and s.title = selected_title and s.location = selected_location
       and s.meeting = selected_meeting
     union all
-    select s.assigned_to, s.taken_by, s.status
+    select s.assigned_to, s.taken_by, s.status, s.leader_id
     from public.demo_services s
     where public.is_demo_mode()
       and s.date_iso = selected_date and s.time = selected_time
@@ -88,6 +88,10 @@ begin
     from service_rows
     where status <> 'excused'
       and (assigned_to is not null or taken_by is not null)
+    union
+    select leader_id as profile_id
+    from service_rows
+    where leader_id is not null
   )
   select distinct p.id, p.display_name, p.role
   from participants x
