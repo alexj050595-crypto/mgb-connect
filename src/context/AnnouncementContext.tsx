@@ -15,7 +15,7 @@ export function AnnouncementProvider({children}:{children:ReactNode}){
   setLoading(true);const supabase=createClient(),table=demoMode?"demo_announcements":"announcements";const {data,error}=await supabase.from(table).select(fields).order("pinned",{ascending:false}).order("created_at",{ascending:false});setAnnouncements(!error&&data?data.map(mapRow):[]);setLoading(false);
  },[authLoading,demoLoading,user,demoMode]);
  useEffect(()=>{void load()},[load]);useEffect(()=>{if(!user&&announcements.length){try{localStorage.setItem(KEY,JSON.stringify(announcements))}catch{}}},[announcements,user]);
- const createAnnouncement=async(input:CreateAnnouncementInput)=>{const title=input.title.trim(),content=input.content.trim();if(!title||!content||!user||profile?.role!=="admin")throw new Error("Keine Berechtigung oder unvollständige Angaben.");const supabase=createClient(),table=demoMode?"demo_announcements":"announcements";
+ const createAnnouncement=async(input:CreateAnnouncementInput)=>{const title=input.title.trim(),content=input.content.trim();if(!title||!content||!user||!["om","admin"].includes(profile?.role??""))throw new Error("Keine Berechtigung oder unvollständige Angaben.");const supabase=createClient(),table=demoMode?"demo_announcements":"announcements";
   const {data,error}=await supabase.from(table).insert({title,content,priority:input.category,published:true,created_by:user.id,audience:input.audience,pinned:input.pinned,starts_at:input.startsAt,expires_at:input.expiresAt,event_at:input.eventAt,location:input.location,link_url:input.linkUrl}).select(fields).single();
   if(error||!data)throw new Error(error?.message??"Ankündigung konnte nicht gespeichert werden.");setAnnouncements(items=>[mapRow(data),...items]);
  };

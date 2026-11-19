@@ -282,7 +282,7 @@ export const navigationItems: NavigationItem[] = [
     icon: Megaphone,
     title: "Ankündigungen",
     description: "Nachrichten an die MGB verwalten",
-    roles: ["admin"],
+    roles: ["om", "admin"],
     permission: "manage_announcements",
   },
 
