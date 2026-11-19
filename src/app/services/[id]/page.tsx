@@ -46,10 +46,20 @@ export default function ServiceDetailPage({
     getService,
     requestExchange,
     excuseService,
-    services,
   } = useServices();
 
   const { id } = React.use(params);
+
+  React.useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+    void supabase.rpc("get_service_team", { p_service_id: id }).then(({ data, error }) => {
+      if (active && !error) {
+        setServingPeople((data ?? []) as Array<{ person_id: string; display_name: string; role: string }>);
+      }
+    });
+    return () => { active = false; };
+  }, [id]);
 
   const service = getService(id);
 
@@ -164,17 +174,6 @@ export default function ServiceDetailPage({
       </main>
     );
   }
-
-  React.useEffect(() => {
-    let active = true;
-    const supabase = createClient();
-    void supabase.rpc("get_service_team", { p_service_id: id }).then(({ data, error }) => {
-      if (active && !error) {
-        setServingPeople((data ?? []) as Array<{ person_id: string; display_name: string; role: string }>);
-      }
-    });
-    return () => { active = false; };
-  }, [id]);
 
   const status = service.status;
 
