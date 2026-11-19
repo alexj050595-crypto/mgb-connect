@@ -21,6 +21,7 @@ import ExcuseDialog from "@/components/services/ExcuseDialog";
 import ExchangeDialog from "@/components/services/ExchangeDialog";
 
 import { useServices } from "@/context/ServiceContext";
+import { createClient } from "@/lib/supabase/client";
 import type {
   ServiceStatus,
   ExcuseReason,
@@ -39,6 +40,7 @@ export default function ServiceDetailPage({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [excuseOpen, setExcuseOpen] = useState(false);
   const [exchangeOpen, setExchangeOpen] = useState(false);
+  const [servingPeople, setServingPeople] = useState<Array<{ person_id: string; display_name: string; role: string }>>([]);
 
   const {
     getService,
@@ -163,16 +165,18 @@ export default function ServiceDetailPage({
     );
   }
 
+  React.useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+    void supabase.rpc("get_service_team", { p_service_id: id }).then(({ data, error }) => {
+      if (active && !error) {
+        setServingPeople((data ?? []) as Array<{ person_id: string; display_name: string; role: string }>);
+      }
+    });
+    return () => { active = false; };
+  }, [id]);
+
   const status = service.status;
-  const servingPeople = services
-    .filter((entry) => entry.dateISO === service.dateISO && entry.time === service.time && entry.title === service.title && entry.location === service.location && entry.meeting === service.meeting && entry.status !== "excused" && (entry.assignedTo || entry.takenById))
-    .map((entry) => ({
-      id: entry.takenById && entry.status === "taken_over" ? entry.takenById : entry.assignedTo ?? entry.id,
-      name: entry.status === "taken_over" && entry.takenBy ? entry.takenBy : entry.assignedName ?? "Name nicht verfügbar",
-      role: entry.status === "taken_over" ? entry.takenByRole ?? entry.assignedRole : entry.assignedRole,
-    }))
-    .filter((person, index, all) => all.findIndex((candidate) => candidate.id === person.id) === index)
-    .sort((a, b) => a.name.localeCompare(b.name, "de"));
 
   const isScheduled = status === "scheduled";
   const isExchangeRequested =
@@ -335,9 +339,9 @@ export default function ServiceDetailPage({
             {servingPeople.length ? (
               <ul className="mt-4 grid gap-2 sm:grid-cols-2">
                 {servingPeople.map((person) => {
-                  const leader = person.role ? isLeaderRole(person.role as "messdiener" | "leiter" | "planschreiber" | "admin") : false;
-                  return <li key={person.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/15 px-4 py-3">
-                    <span className="min-w-0 truncate text-sm font-medium text-white">{person.name}</span>
+                  const leader = isLeaderRole(person.role as "messdiener" | "leiter" | "planschreiber" | "admin");
+                  return <li key={person.person_id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/15 px-4 py-3">
+                    <span className="min-w-0 truncate text-sm font-medium text-white">{person.display_name}</span>
                     <span className={"shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold " + (leader ? "border-amber-300/20 bg-amber-300/10 text-amber-200" : "border-white/10 bg-white/5 text-white/45")}>{leader ? "Leiter" : "Messdiener"}</span>
                   </li>;
                 })}
