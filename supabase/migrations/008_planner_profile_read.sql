@@ -24,13 +24,14 @@ declare
   selected_title text;
   selected_location text;
   selected_meeting text;
+  selected_leader_id uuid;
 begin
   if auth.uid() is null then
     raise exception 'Anmeldung erforderlich.';
   end if;
 
-  select s.date_iso, s.time, s.title, s.location, s.meeting
-  into selected_date, selected_time, selected_title, selected_location, selected_meeting
+  select s.date_iso, s.time, s.title, s.location, s.meeting, s.leader_id
+  into selected_date, selected_time, selected_title, selected_location, selected_meeting, selected_leader_id
   from public.services s
   where s.id = p_service_id;
 
@@ -44,6 +45,26 @@ begin
 
   if selected_date is null then
     raise exception 'Dienst nicht gefunden.';
+  end if;
+
+  if not public.is_admin_or_planner()
+     and selected_leader_id is distinct from auth.uid()
+     and not exists (
+       select 1 from public.services s
+       where not public.is_demo_mode()
+         and s.date_iso = selected_date and s.time = selected_time
+         and s.title = selected_title and s.location = selected_location
+         and s.meeting = selected_meeting
+         and (s.assigned_to = auth.uid() or s.taken_by = auth.uid() or s.leader_id = auth.uid())
+       union all
+       select 1 from public.demo_services s
+       where public.is_demo_mode()
+         and s.date_iso = selected_date and s.time = selected_time
+         and s.title = selected_title and s.location = selected_location
+         and s.meeting = selected_meeting
+         and (s.assigned_to = auth.uid() or s.taken_by = auth.uid() or s.leader_id = auth.uid())
+     ) then
+    raise exception 'Du hast keinen Zugriff auf die Teilnehmerliste dieses Dienstes.';
   end if;
 
   return query
