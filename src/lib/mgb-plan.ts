@@ -8,6 +8,7 @@ export const MGB_PLAN_MIME_TYPE = "application/vnd.mgb-connect.plan+json";
 export const MGB_PLAN_EXTENSION = ".mgb";
 export const MGB_PLAN_MAX_APPOINTMENTS = 500;
 export const DEFAULT_PLAN_SERVICE_TITLE = "Messdienerdienst";
+export const DEFAULT_PLAN_SERVICE_POINTS = 10;
 export type MgbPlanSourceFormat = "pdf" | "xlsx" | "manual" | "mgb";
 export type MgbPlanAppointment = {
   title: string;
@@ -70,11 +71,11 @@ function validateAppointment(value: unknown, index: number, issues: MgbPlanValid
     if (input.length > max) issues.push({ path: path + "." + field, message: "Zu viele Einträge." });
     return input.slice(0, max).map((v, i) => readText(v, path + "." + field + "[" + i + "]", issues, true)).filter(Boolean);
   };
-  const points = value.points === undefined ? 0 : value.points;
+  const points = value.points === undefined ? DEFAULT_PLAN_SERVICE_POINTS : value.points;
   if (typeof points !== "number" || !Number.isInteger(points) || points < 0 || points > 1000) {
     issues.push({ path: path + ".points", message: "Punkte müssen eine ganze Zahl zwischen 0 und 1000 sein." });
   }
-  return { title, dateISO, time, notes: list(value.notes, "notes", true), assignedNames: list(value.assignedNames, "assignedNames"), points: typeof points === "number" && Number.isInteger(points) && points >= 0 && points <= 1000 ? points : 0 };
+  return { title, dateISO, time, notes: list(value.notes, "notes", true), assignedNames: list(value.assignedNames, "assignedNames"), points: typeof points === "number" && Number.isInteger(points) && points >= 0 && points <= 1000 ? points : DEFAULT_PLAN_SERVICE_POINTS };
 }
 export function validateMgbPlan(value: unknown): MgbPlanValidationResult {
   const issues: MgbPlanValidationIssue[] = [];

@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import {
   DEFAULT_PLAN_SERVICE_TITLE,
+  DEFAULT_PLAN_SERVICE_POINTS,
   MGB_PLAN_FORMAT,
   MGB_PLAN_VERSION,
   type MgbPlanAppointment,
@@ -47,7 +48,7 @@ function extractNames(value: string): string[] {
   return unique((value.match(NAME_GLOBAL_RE) ?? []).filter((name) => ABBREV_RE.test(name)));
 }
 function makeAppointment(dateISO: string, time: string, notes: string[] = [], assignedNames: string[] = []): MgbPlanAppointment {
-  return { title: DEFAULT_PLAN_SERVICE_TITLE, dateISO, time, notes: unique(notes), assignedNames: unique(assignedNames), points: 0 };
+  return { title: DEFAULT_PLAN_SERVICE_TITLE, dateISO, time, notes: unique(notes), assignedNames: unique(assignedNames), points: DEFAULT_PLAN_SERVICE_POINTS };
 }
 function buildPlan(fileName: string, sourceFormat: "pdf" | "xlsx", appointments: MgbPlanAppointment[], warnings: string[]): ParseResult {
   if (!appointments.length) throw new Error("Es wurden keine Termine erkannt. Bitte prüfe, ob die Datei das erwartete Planlayout verwendet.");
