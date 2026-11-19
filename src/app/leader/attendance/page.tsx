@@ -79,7 +79,9 @@ export default function LeaderAttendancePage() {
       const memberId = row.taken_by ?? row.assigned_to;
       const memberName = memberId ? peopleById.get(memberId) ?? "" : "Nicht zugewiesen";
       const haystack = [row.title, row.date_iso, row.time, memberName].join(" ").toLowerCase();
-      return (!q || haystack.includes(q)) && row.date_iso <= new Date().toLocaleDateString("en-CA");
+      const now = new Date();
+      const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      return Boolean(memberId) && (!q || haystack.includes(q)) && row.date_iso <= todayISO;
     });
   }, [rows, search, peopleById]);
 
