@@ -4,7 +4,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-type UserRole = "messdiener" | "leiter" | "planschreiber" | "admin";
+type UserRole = "messdiener" | "leiter" | "om" | "planschreiber" | "admin";
 
 type ActionBody = {
   action: "create" | "update" | "delete" | "set_password";
@@ -36,7 +36,7 @@ async function requireAdmin() {
 }
 
 function validRole(value: unknown): value is UserRole {
-  return value === "messdiener" || value === "leiter" || value === "planschreiber" || value === "admin";
+  return value === "messdiener" || value === "leiter" || value === "om" || value === "planschreiber" || value === "admin";
 }
 
 export async function GET() {

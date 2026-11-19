@@ -53,6 +53,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -66,6 +67,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -78,6 +80,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -90,6 +93,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -102,6 +106,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -114,6 +119,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -126,6 +132,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -146,6 +153,7 @@ export const navigationItems: NavigationItem[] = [
     description: "Übersicht und Leitungsfunktionen",
     roles: [
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -157,7 +165,7 @@ export const navigationItems: NavigationItem[] = [
     icon: ClipboardCheck,
     title: "Anwesenheit",
     description: "Anwesenheit nach Messen erfassen",
-    roles: ["leiter", "planschreiber", "admin"],
+    roles: ["leiter", "om", "planschreiber", "admin"],
     permission: "manage_attendance",
   },
 
@@ -168,6 +176,7 @@ export const navigationItems: NavigationItem[] = [
     description: "Dienste prüfen und verwalten",
     roles: [
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -181,6 +190,7 @@ export const navigationItems: NavigationItem[] = [
     description: "Messdiener und deren Dienste einsehen",
     roles: [
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -194,6 +204,7 @@ export const navigationItems: NavigationItem[] = [
     description: "Punkte und Dienste auswerten",
     roles: [
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],

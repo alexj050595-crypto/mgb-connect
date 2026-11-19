@@ -6,6 +6,7 @@ import { ServiceProvider } from "@/context/ServiceContext";
 import { RoleProvider } from "@/context/RoleContext";
 import { AnnouncementProvider } from "@/context/AnnouncementContext";
 import { DemoModeProvider } from "@/context/DemoModeContext";
+import { PerformanceProvider } from "@/context/PerformanceContext";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -27,6 +28,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body>
+        <PerformanceProvider>
         <AuthProvider>
           <RoleProvider>
             <DemoModeProvider>
@@ -36,6 +38,7 @@ export default function RootLayout({
             </DemoModeProvider>
           </RoleProvider>
         </AuthProvider>
+        </PerformanceProvider>
       </body>
     </html>
   );

@@ -38,11 +38,12 @@ type AdminUser = {
   emailConfirmed: boolean;
 };
 
-const roleOptions: UserRole[] = ["messdiener", "leiter", "planschreiber", "admin"];
+const roleOptions: UserRole[] = ["messdiener", "leiter", "om", "planschreiber", "admin"];
 
 const roleStyles: Record<UserRole, string> = {
   messdiener: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
   leiter: "border-blue-400/20 bg-blue-400/10 text-blue-300",
+  om: "border-cyan-400/20 bg-cyan-400/10 text-cyan-300",
   planschreiber: "border-violet-400/20 bg-violet-400/10 text-violet-300",
   admin: "border-amber-400/20 bg-amber-400/10 text-amber-300",
 };
