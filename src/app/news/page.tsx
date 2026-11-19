@@ -231,7 +231,7 @@ export default function NewsPage() {
                         {announcement.eventAt && <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" />{new Date(announcement.eventAt).toLocaleString("de-DE")}</span>}
                         {announcement.location && <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{announcement.location}</span>}
                         {announcement.linkUrl && <a href={announcement.linkUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-amber-200"><Link2 className="h-3.5 w-3.5" />Mehr erfahren</a>}
-                      </div>
+                      </div>}
                     </div>
 
                     <ChevronRight className="hidden h-5 w-5 shrink-0 text-white/20 transition group-hover:translate-x-0.5 group-hover:text-white/40 sm:block" />

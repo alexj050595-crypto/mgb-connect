@@ -52,6 +52,8 @@ export type Permission =
   | "view_leader_area"
   | "view_team"
   | "view_service_management"
+  | "view_statistics"
+  | "manage_attendance"
   | "confirm_requests"
   | "manage_schedule"
   | "manage_members"
@@ -61,11 +63,13 @@ export type Permission =
 const permissions: Record<UserRole, Permission[]> = {
   messdiener: [],
 
-  om: ["view_leader_area", "view_team", "view_service_management"],
+  om: ["view_leader_area", "view_team", "view_service_management", "view_statistics", "manage_attendance"],
   leiter: [
     "view_leader_area",
     "view_team",
     "view_service_management",
+    "view_statistics",
+    "manage_attendance",
   ],
 
   planschreiber: [
