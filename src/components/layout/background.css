@@ -234,9 +234,3 @@
   }
 
 }
-/* Low-resource mode keeps the visual identity but removes expensive motion/effects. */
-.mgb-performance-lite .mgb-background__flow{animation:none!important;transform:none!important;will-change:auto!important}
-.mgb-performance-lite .mgb-flow,.mgb-performance-lite .mgb-glow{filter:none!important;will-change:auto!important}
-.mgb-performance-lite .mgb-flow-2,.mgb-performance-lite .mgb-flow-3,.mgb-performance-lite .mgb-glow-right,.mgb-performance-lite .mgb-noise{display:none!important}
-.mgb-performance-lite .mgb-flow-1{opacity:.38!important;filter:blur(24px)!important}
-@media(prefers-reduced-motion:reduce){.mgb-background__flow{animation:none!important}}
