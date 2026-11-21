@@ -21,10 +21,12 @@ import ExcuseDialog from "@/components/services/ExcuseDialog";
 import ExchangeDialog from "@/components/services/ExchangeDialog";
 
 import { useServices } from "@/context/ServiceContext";
+import { createClient } from "@/lib/supabase/client";
 import type {
   ServiceStatus,
   ExcuseReason,
 } from "@/data/services";
+import { isLeaderRole } from "@/lib/permissions";
 
 type ServicePageProps = {
   params: Promise<{
@@ -38,6 +40,8 @@ export default function ServiceDetailPage({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [excuseOpen, setExcuseOpen] = useState(false);
   const [exchangeOpen, setExchangeOpen] = useState(false);
+  const [servingPeople, setServingPeople] = useState<Array<{ person_id: string; display_name: string; role: string }>>([]);
+  const [rosterError, setRosterError] = useState("");
 
   const {
     getService,
@@ -46,6 +50,22 @@ export default function ServiceDetailPage({
   } = useServices();
 
   const { id } = React.use(params);
+
+  React.useEffect(() => {
+    let active = true;
+    const supabase = createClient();
+    setServingPeople([]);
+    setRosterError("");
+    void supabase.rpc("get_service_team", { p_service_id: id }).then(({ data, error }) => {
+      if (!active) return;
+      if (error) {
+        setRosterError("Die Teilnehmerliste konnte nicht geladen werden. Bitte lade die Seite erneut.");
+        return;
+      }
+      setServingPeople((data ?? []) as Array<{ person_id: string; display_name: string; role: string }>);
+    });
+    return () => { active = false; };
+  }, [id]);
 
   const service = getService(id);
 
@@ -300,7 +320,7 @@ export default function ServiceDetailPage({
             <InfoRow
               icon={<User size={20} />}
               label="Leiter"
-              value={service.leader}
+              value={service.leader || "Siehe Teamübersicht"}
             />
 
             <InfoRow
@@ -315,6 +335,25 @@ export default function ServiceDetailPage({
               value={`${service.points} Punkte`}
             />
           </div>
+
+          <section className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div><p className="text-sm uppercase tracking-[0.18em] text-amber-300/80">Team</p><h2 className="mt-1 text-xl font-bold text-white">Wer dient mit?</h2></div>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/55">{servingPeople.length} Personen</span>
+            </div>
+            {rosterError ? <p role="alert" className="mt-3 text-sm text-red-300">{rosterError}</p> : servingPeople.length ? (
+              <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                {servingPeople.map((person) => {
+                  const leader = isLeaderRole(person.role as "messdiener" | "leiter" | "planschreiber" | "admin");
+                  return <li key={person.person_id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/15 px-4 py-3">
+                    <span className="min-w-0 truncate text-sm font-medium text-white">{person.display_name}</span>
+                    <span className={"shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold " + (leader ? "border-amber-300/20 bg-amber-300/10 text-amber-200" : "border-white/10 bg-white/5 text-white/45")}>{leader ? "Leiter" : "Messdiener"}</span>
+                  </li>;
+                })}
+              </ul>
+            ) : <p className="mt-3 text-sm text-white/40">Für diesen Termin sind aktuell keine weiteren Personen eingetragen.</p>}
+            <p className="mt-3 text-xs text-white/30">Die Liste zeigt alle Personen, die für denselben Termin eingeteilt sind. Planschreiber und Admins werden dabei ebenfalls als Leiter angezeigt.</p>
+          </section>
 
           <StatusPanel
             status={status}

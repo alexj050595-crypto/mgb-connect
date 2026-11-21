@@ -51,7 +51,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       role,
       roleLabel: roles[role].label,
       isMember: role === "messdiener",
-      isLeader: role === "leiter",
+      isLeader: role === "leiter" || role === "om",
       isPlanner: role === "planschreiber",
       isAdmin: role === "admin",
       hasPermission: (permission: Permission) => hasPermission(role, permission),

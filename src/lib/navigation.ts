@@ -7,6 +7,7 @@ import {
   Settings,
   ShieldCheck,
   ClipboardList,
+  ClipboardCheck,
   Users,
   BarChart3,
   CheckCircle2,
@@ -52,6 +53,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -65,6 +67,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -77,6 +80,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -89,6 +93,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -101,6 +106,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -113,6 +119,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -125,6 +132,7 @@ export const navigationItems: NavigationItem[] = [
     roles: [
       "messdiener",
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -145,10 +153,20 @@ export const navigationItems: NavigationItem[] = [
     description: "Übersicht und Leitungsfunktionen",
     roles: [
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
     permission: "view_leader_area",
+  },
+
+  {
+    href: "/leader/attendance",
+    icon: ClipboardCheck,
+    title: "Anwesenheit",
+    description: "Anwesenheit nach Messen erfassen",
+    roles: ["leiter", "om", "planschreiber", "admin"],
+    permission: "manage_attendance",
   },
 
   {
@@ -158,6 +176,7 @@ export const navigationItems: NavigationItem[] = [
     description: "Dienste prüfen und verwalten",
     roles: [
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -171,6 +190,7 @@ export const navigationItems: NavigationItem[] = [
     description: "Messdiener und deren Dienste einsehen",
     roles: [
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -184,6 +204,7 @@ export const navigationItems: NavigationItem[] = [
     description: "Punkte und Dienste auswerten",
     roles: [
       "leiter",
+      "om",
       "planschreiber",
       "admin",
     ],
@@ -261,7 +282,7 @@ export const navigationItems: NavigationItem[] = [
     icon: Megaphone,
     title: "Ankündigungen",
     description: "Nachrichten an die MGB verwalten",
-    roles: ["admin"],
+    roles: ["om", "admin"],
     permission: "manage_announcements",
   },
 

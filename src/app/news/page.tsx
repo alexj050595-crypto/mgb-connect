@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   CalendarDays,
+  MapPin,
+  Link2,
+  Pin,
   ChevronRight,
   Megaphone,
   PartyPopper,
@@ -14,6 +17,7 @@ import {
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import BrandMark from "@/components/layout/BrandMark";
 
 import { useAnnouncements } from "@/context/AnnouncementContext";
 
@@ -154,8 +158,9 @@ export default function NewsPage() {
             </div>
 
             <div>
-              <p className="mb-1 text-sm font-medium uppercase tracking-[0.18em] text-amber-300/80">
-                MGB Connect
+              <p className="mb-1 inline-flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.18em] text-amber-300/80">
+                <BrandMark className="h-[17px] w-[30px]" />
+                <span>Connect</span>
               </p>
 
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
@@ -211,6 +216,7 @@ export default function NewsPage() {
                           <CategoryIcon className="h-3.5 w-3.5" />
                           {category.label}
                         </span>
+                        {announcement.pinned && <span className="inline-flex items-center gap-1 text-xs text-amber-200"><Pin className="h-3.5 w-3.5" />Angeheftet</span>}
 
                         <span className="inline-flex items-center gap-1.5 text-xs text-white/40">
                           <CalendarDays className="h-3.5 w-3.5" />
@@ -222,9 +228,12 @@ export default function NewsPage() {
                         {announcement.title}
                       </h2>
 
-                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-white/60">
-                        {announcement.content}
-                      </p>
+                      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-white/60">{announcement.content}</p>
+                      {(announcement.eventAt || announcement.location || announcement.linkUrl) && <div className="mt-4 flex flex-wrap gap-4 text-xs text-white/45">
+                        {announcement.eventAt && <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" />{new Date(announcement.eventAt).toLocaleString("de-DE")}</span>}
+                        {announcement.location && <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{announcement.location}</span>}
+                        {announcement.linkUrl && <a href={announcement.linkUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-amber-200"><Link2 className="h-3.5 w-3.5" />Mehr erfahren</a>}
+                      </div>}
                     </div>
 
                     <ChevronRight className="hidden h-5 w-5 shrink-0 text-white/20 transition group-hover:translate-x-0.5 group-hover:text-white/40 sm:block" />

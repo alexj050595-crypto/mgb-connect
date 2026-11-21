@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 import Background from "@/components/layout/Background";
+import BrandMark from "@/components/layout/BrandMark";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -40,7 +41,10 @@ function LoginForm() {
       <div className="mb-8 flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-amber-300">
         <ShieldCheck size={23} />
       </div>
-      <p className="text-sm uppercase tracking-[0.2em] text-amber-300/75">MGB Connect</p>
+      <p className="inline-flex items-center gap-1.5 text-sm uppercase tracking-[0.2em] text-amber-300/75">
+        <BrandMark className="h-[18px] w-8" />
+        <span>Connect</span>
+      </p>
       <h1 className="mt-2 text-3xl font-black text-white">Willkommen zurück</h1>
       <p className="mt-2 text-sm leading-6 text-white/50">Melde dich mit deinem MGB-Connect-Konto an.</p>
 

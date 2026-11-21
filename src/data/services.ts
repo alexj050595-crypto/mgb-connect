@@ -25,8 +25,11 @@ export type Service = {
   points: number;
   status: ServiceStatus;
   assignedTo?: string;
+  assignedName?: string;
+  assignedRole?: string;
   takenBy?: string;
   takenById?: string;
+  takenByRole?: string;
   excuseReason?: ExcuseReason;
 };
 

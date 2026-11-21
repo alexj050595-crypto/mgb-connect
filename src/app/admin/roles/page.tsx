@@ -43,6 +43,7 @@ const permissionMeta: PermissionMeta[] = [
   { permission: "view_team", title: "Messdiener einsehen", description: "Messdiener und deren Informationen einsehen.", icon: <Users size={18} /> },
   { permission: "view_service_management", title: "Dienstverwaltung", description: "Dienste prüfen und verwalten.", icon: <ClipboardList size={18} /> },
   { permission: "view_statistics", title: "Statistiken", description: "Statistiken und Auswertungen einsehen.", icon: <BarChart3 size={18} /> },
+  { permission: "manage_attendance", title: "Anwesenheit erfassen", description: "Anwesenheit nach Messen erfassen und korrigieren.", icon: <ClipboardList size={18} /> },
   { permission: "confirm_requests", title: "Übernahmen bearbeiten", description: "Übernahmen prüfen und bei Bedarf ablehnen.", icon: <CheckCircle2 size={18} /> },
   { permission: "manage_schedule", title: "Messdienerplan verwalten", description: "Dienste und Messdienerpläne verwalten.", icon: <CalendarDays size={18} /> },
   { permission: "manage_members", title: "Benutzer verwalten", description: "Benutzer und Mitglieder verwalten.", icon: <UserCog size={18} /> },
@@ -51,10 +52,11 @@ const permissionMeta: PermissionMeta[] = [
   { permission: "manage_system", title: "System verwalten", description: "Globale Systemeinstellungen verwalten.", icon: <Settings size={18} /> },
 ];
 
-const roleOrder: UserRole[] = ["messdiener", "leiter", "planschreiber", "admin"];
+const roleOrder: UserRole[] = ["messdiener", "leiter", "om", "planschreiber", "admin"];
 const roleIcons: Record<UserRole, ReactNode> = {
   messdiener: <UserRound size={23} />,
   leiter: <Users size={23} />,
+  om: <ShieldCheck size={23} />,
   planschreiber: <CalendarDays size={23} />,
   admin: <ShieldCheck size={23} />,
 };
@@ -71,6 +73,7 @@ export default function AdminRolesPage() {
   const [rolePermissions, setRolePermissions] = useState<Record<UserRole, Permission[]>>({
     messdiener: [...permissions.messdiener],
     leiter: [...permissions.leiter],
+    om: [...permissions.om],
     planschreiber: [...permissions.planschreiber],
     admin: [...permissions.admin],
   });
