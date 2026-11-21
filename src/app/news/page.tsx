@@ -17,6 +17,7 @@ import {
 import Background from "@/components/layout/Background";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import BrandMark from "@/components/layout/BrandMark";
 
 import { useAnnouncements } from "@/context/AnnouncementContext";
 
@@ -157,8 +158,9 @@ export default function NewsPage() {
             </div>
 
             <div>
-              <p className="mb-1 text-sm font-medium uppercase tracking-[0.18em] text-amber-300/80">
-                MGB Connect
+              <p className="mb-1 inline-flex items-center gap-1.5 text-sm font-medium uppercase tracking-[0.18em] text-amber-300/80">
+                <BrandMark className="h-[17px] w-[30px]" />
+                <span>Connect</span>
               </p>
 
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">

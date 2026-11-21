@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import BrandMark from "@/components/layout/BrandMark";
 import { Menu, Bell, CircleUserRound } from "lucide-react";
 
 type TopbarProps = {
@@ -26,8 +27,9 @@ export default function Topbar({ onMenuClick, sidebarOpen }: TopbarProps) {
         </button>
 
         {!sidebarOpen && (
-          <h2 className="truncate text-lg font-bold tracking-tight text-white sm:text-2xl">
-            MGB Connect
+          <h2 className="inline-flex min-w-0 items-center gap-1.5 truncate text-lg font-bold tracking-tight text-white sm:text-2xl">
+            <BrandMark className="h-6 w-[42px] sm:h-7 sm:w-[49px]" />
+            <span>Connect</span>
           </h2>
         )}
       </div>

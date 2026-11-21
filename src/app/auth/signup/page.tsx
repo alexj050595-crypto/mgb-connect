@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, UserRound, MapPin } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Background from "@/components/layout/Background";
+import BrandMark from "@/components/layout/BrandMark";
 
 const inputClass = "w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-white outline-none placeholder:text-white/25 focus:border-amber-400/30";
 const labelClass = "mb-2 block text-sm font-medium text-white/65";
@@ -78,7 +79,10 @@ export default function SignupPage() {
       <Background />
       <div className="relative z-10 w-full max-w-xl rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-2xl sm:rounded-[30px] sm:p-9">
         <Link href="/auth/login" className="inline-flex items-center gap-2 text-sm text-white/45 hover:text-white"><ArrowLeft size={16} />Zur Anmeldung</Link>
-        <p className="mt-7 text-sm uppercase tracking-[0.2em] text-amber-300/75">MGB Connect</p>
+        <p className="mt-7 inline-flex items-center gap-1.5 text-sm uppercase tracking-[0.2em] text-amber-300/75">
+          <BrandMark className="h-[18px] w-8" />
+          <span>Connect</span>
+        </p>
         <h1 className="mt-2 text-3xl font-black text-white">Konto erstellen</h1>
         <p className="mt-2 text-sm leading-6 text-white/50">Wir benötigen ein paar Angaben, damit deine Kontaktdaten korrekt hinterlegt werden können.</p>
 
