@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode, type Dispatch, type SetStateAction, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Bell,
@@ -12,6 +13,8 @@ import {
   EyeOff,
   Globe2,
   Lock,
+  LogOut,
+  FileText,
   Palette,
   Shield,
   Settings2,
@@ -51,6 +54,9 @@ export default function SettingsPage() {
   const [passwordOpen, setPasswordOpen] = useState(false);
   const { roleLabel } = useRole();
   const { user, profile } = useAuth();
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
 
   const displayName = profile?.display_name?.trim() || user?.email?.split("@")[0] || "Mein Konto";
   const email = user?.email || "Nicht verfügbar";
@@ -133,6 +139,44 @@ export default function SettingsPage() {
         <SettingsSection icon={<Globe2 size={21} />} eyebrow="Sprache" title="Sprache & Region" description="Aktuell ist MGB Connect auf Deutsch ausgelegt.">
           <InfoRow title="Sprache" value="Deutsch" />
           <div className="mt-3"><InfoRow title="Zeitzone" value="Europe/Berlin" /></div>
+        </SettingsSection>
+
+        <SettingsSection icon={<FileText size={21} />} eyebrow="Rechtliches" title="Impressum & Datenschutz" description="Informationen zum Betreiber und zur Verarbeitung deiner Daten.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link href="/impressum" className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-white transition hover:border-amber-300/25 hover:bg-white/[0.05]">
+              <span><span className="block font-semibold">Impressum</span><span className="mt-1 block text-sm text-white/45">Angaben zum Betreiber</span></span><ChevronRight size={18} className="text-white/35" />
+            </Link>
+            <Link href="/datenschutz" className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-white transition hover:border-amber-300/25 hover:bg-white/[0.05]">
+              <span><span className="block font-semibold">Datenschutzhinweise</span><span className="mt-1 block text-sm text-white/45">Dienste und Datenverarbeitung</span></span><ChevronRight size={18} className="text-white/35" />
+            </Link>
+          </div>
+          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+            <p className="text-sm leading-6 text-white/55">Die Datenschutzhinweise der Kirchengemeinde sind ebenfalls über das bestehende MGB-Impressum erreichbar.</p>
+            <a href="https://mgbonline.wordpress.com/impressum/" target="_blank" rel="noreferrer" className="mt-2 inline-flex text-sm font-semibold text-amber-200 hover:text-amber-100">Bestehende MGB-Datenschutzhinweise öffnen ↗</a>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection icon={<LogOut size={21} />} eyebrow="Sitzung" title="Abmelden" description="Melde dich von diesem Gerät ab. Du kannst dich jederzeit erneut anmelden.">
+          <button
+            type="button"
+            disabled={signingOut}
+            onClick={async () => {
+              setSigningOut(true);
+              setSignOutError("");
+              const { error } = await createClient().auth.signOut();
+              if (error) {
+                setSignOutError("Abmelden war nicht möglich. Bitte versuche es erneut.");
+                setSigningOut(false);
+                return;
+              }
+              router.replace("/auth/login");
+              router.refresh();
+            }}
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-red-400/25 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <LogOut size={17} />{signingOut ? "Wird abgemeldet…" : "Jetzt abmelden"}
+          </button>
+          {signOutError && <p role="alert" className="mt-3 text-sm text-red-300">{signOutError}</p>}
         </SettingsSection>
 
         <div className="mt-10 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.025] p-5 text-white/40">
