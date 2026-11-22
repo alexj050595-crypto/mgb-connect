@@ -6,6 +6,7 @@ import { ServiceProvider } from "@/context/ServiceContext";
 import { RoleProvider } from "@/context/RoleContext";
 import { AnnouncementProvider } from "@/context/AnnouncementContext";
 import { DemoModeProvider } from "@/context/DemoModeContext";
+import PrivacyNotice from "@/components/privacy/PrivacyNotice";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -31,7 +32,7 @@ export default function RootLayout({
           <RoleProvider>
             <DemoModeProvider>
               <ServiceProvider>
-                <AnnouncementProvider>{children}</AnnouncementProvider>
+                <AnnouncementProvider>{children}<PrivacyNotice /></AnnouncementProvider>
               </ServiceProvider>
             </DemoModeProvider>
           </RoleProvider>

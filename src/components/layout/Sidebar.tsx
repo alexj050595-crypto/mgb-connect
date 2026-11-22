@@ -7,6 +7,7 @@ import { useEffect } from "react";
 
 import { useRole } from "@/context/RoleContext";
 import { getNavigationForRole } from "@/lib/navigation";
+import BrandMark from "@/components/layout/BrandMark";
 
 type SidebarProps = {
   open: boolean;
@@ -52,7 +53,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             className="fixed left-0 top-0 z-50 flex h-[100dvh] max-h-[100dvh] w-[min(20rem,calc(100vw-1rem))] flex-col overflow-hidden border-r border-white/10 bg-white/5 backdrop-blur-lg pb-[env(safe-area-inset-bottom)]"
           >
             <div className="flex shrink-0 items-center justify-between px-5 py-5 sm:px-7 sm:py-7">
-              <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">MGB Connect</h2>
+              <h2 className="inline-flex items-center gap-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl">
+                <BrandMark className="h-7 w-[49px] sm:h-8 sm:w-14" />
+                <span>Connect</span>
+              </h2>
               <button
                 type="button"
                 onClick={onClose}
@@ -121,7 +125,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               </div>
               <div className="mt-2 rounded-2xl border border-white/10 bg-white/5 p-3 sm:mt-3 sm:p-4">
                 <p className="text-sm text-white/60">Version</p>
-                <h3 className="mt-1 font-semibold text-white">MGB Connect Alpha</h3>
+                <h3 className="mt-1 inline-flex items-center gap-1.5 font-semibold text-white">
+                  <BrandMark className="h-4 w-7" />
+                  <span>Connect Alpha</span>
+                </h3>
               </div>
             </div>
           </motion.aside>

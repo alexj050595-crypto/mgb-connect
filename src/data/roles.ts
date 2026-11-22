@@ -1,6 +1,6 @@
 export type UserRole =
   | "messdiener"
-  | "leiter"
+  | "leiter" | "om"
   | "planschreiber"
   | "admin";
 
@@ -17,6 +17,8 @@ export const roles: Record<UserRole, RoleDefinition> = {
     description:
       "Teilnehmer mit Zugriff auf eigene Dienste, Tauschbörse und Punkte.",
   },
+
+  om: { id: "om", label: "Obermessdiener", description: "Obermessdiener mit den gleichen Grundrechten wie Leiter." },
 
   leiter: {
     id: "leiter",
@@ -50,6 +52,8 @@ export type Permission =
   | "view_leader_area"
   | "view_team"
   | "view_service_management"
+  | "view_statistics"
+  | "manage_attendance"
   | "confirm_requests"
   | "manage_schedule"
   | "manage_members"
@@ -59,10 +63,13 @@ export type Permission =
 const permissions: Record<UserRole, Permission[]> = {
   messdiener: [],
 
+  om: ["view_leader_area", "view_team", "view_service_management", "view_statistics", "manage_attendance"],
   leiter: [
     "view_leader_area",
     "view_team",
     "view_service_management",
+    "view_statistics",
+    "manage_attendance",
   ],
 
   planschreiber: [
@@ -109,7 +116,7 @@ export function hasPermission(
 
 export function isLeaderRole(role: UserRole): boolean {
   return (
-    role === "leiter" ||
+    role === "leiter" || role === "om" ||
     role === "planschreiber" ||
     role === "admin"
   );

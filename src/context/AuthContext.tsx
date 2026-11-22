@@ -15,7 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 export type Profile = {
   id: string;
   display_name: string;
-  role: "messdiener" | "leiter" | "planschreiber" | "admin";
+  role: "messdiener" | "leiter" | "om" | "planschreiber" | "admin";
   points: number;
   active: boolean;
 };

@@ -1,0 +1,23 @@
+{
+  "format": "mgb-connect-plan",
+  "schemaVersion": 2,
+  "createdAt": "2026-11-18T18:00:00.000Z",
+  "sourceFileName": "messdienerplan.xlsx",
+  "sourceFormat": "xlsx",
+  "appointments": [
+    {
+      "title": "Messdienerdienst",
+      "dateISO": "2026-11-22",
+      "time": "10:00",
+      "notes": ["Leiterrunde", "Medinachmittag"],
+      "assignedNames": []
+    },
+    {
+      "title": "Messdienerdienst",
+      "dateISO": "2026-11-29",
+      "time": "11:30",
+      "notes": ["1. Advent"],
+      "assignedNames": ["Beispiel A.", "Beispiel B."]
+    }
+  ]
+}
